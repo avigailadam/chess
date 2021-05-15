@@ -1,0 +1,5 @@
+.idea
+cmake-build*
+coverage*
+out
+*.txt
