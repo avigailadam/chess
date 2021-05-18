@@ -1,38 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "chessSystem.h"
 #include "map.h"
+#include "chessSystem.h"
+#include "tournaments.h"
 
-typedef struct game_data_t {
-    int player_1_id;
-    int player_2_id;
-    Winner winner;
-    int duration;
-} *GameData;
+#define CHECK_NULL(args) if ((args) == NULL) return NULL
 
-typedef struct game_t {
-    GameData data;
-    struct game_t *next;
-} *Game;
-
-typedef struct tournament_data_t {
-    Game head;
-    int id;
-    int venue;
-    int winner;
-} *TournamentData;
-
-typedef struct tournament_t {
-    TournamentData data;
-    struct tournament_t *next;
-} *Tournament;
+typedef int TournamentId;
 
 typedef struct chess_system_t {
-    Tournament head;
+    Map tournamentById;
 } *ChessSystem;
 
-ChessSystem chessCreate(){
+TournamentId* copy_tournament_id(TournamentId* id){
+   TournamentId * result = malloc(sizeof(*result));
+   CHECK_NULL(result);
+   *result = *id;
+   return result;
+}
 
-
+ChessSystem chessCreate() {
+    ChessSystem result = malloc(sizeof(*result));
+    CHECK_NULL(result);
+    result->tournamentById = mapCreate(&copy_tournament, &copy_tournament_id, &free_tournament, &free_tournament_id,
+                                       &compare_tournament_id);
+    CHECK_NULL(result->tournamentById);
+    return result;
 }
