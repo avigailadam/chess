@@ -4,10 +4,12 @@
 #include <assert.h>
 #include <string.h>
 #include "map.h"
+#include <assert.h>
 #include "chessSystem.h"
 #include "tournaments.h"
 
 #define MIN_LOCATION_LEN 3
+
 
 #define CHECK_NULL(args) if ((args) == NULL) return NULL
 #define NULL_ASSERT(args) assert(args != NULL)
@@ -15,7 +17,7 @@
 typedef int TournamentId;
 
 typedef struct chess_system_t {
-    Map tournamentById;
+    Map tournamentsById;
 } *ChessSystem;
 
 Tournament tournamentCreate(int max_games_per_player, const char *location);
@@ -76,11 +78,58 @@ ChessResult convertResults(MapResult result) {
 ChessSystem chessCreate() {
     ChessSystem result = malloc(sizeof(*result));
     CHECK_NULL(result);
-    result->tournamentById = mapCreate(&copy_tournament, &copy_tournament_id, &free_tournament, &free_tournament_id,
-                                       &compare_tournament_id);
-    CHECK_NULL(result->tournamentById);
+    result->tournamentsById = mapCreate(&copy_tournament, &copy_tournament_id, &free_tournament, &free_tournament_id,
+                                        &compare_tournament_id);
+    CHECK_NULL(result->tournamentsById);
     return result;
 }
+
+void chessDestroy(ChessSystem chess) {
+    if (chess == NULL) {
+        return;
+    }
+    MAP_FOREACH(Map, iterator, chess->tournamentsById) {
+        mapDestroy(chess->tournamentsById);
+    }
+    free(chess);
+}
+
+ChessResult chessRemoveTournament(ChessSystem chess, int tournament_id) {
+    CHECK_NULL(chess);
+    {
+        return CHESS_NULL_ARGUMENT;
+    }
+    if (tournament_id <= 0) {
+        return CHESS_INVALID_ID;
+    }
+    MAP_FOREACH(Map, iterator, chess->tournamentsById) {
+        if (mapContains(chess->tournamentsById, (MapKeyElement)tournament_id)){
+            mapDestroy(chess->tournamentsById);
+            return CHESS_SUCCESS;
+        }
+        return CHESS_TOURNAMENT_NOT_EXIST;
+    }
+}
+ChessResult chessEndTournament (ChessSystem chess, int tournament_id) {
+    CHECK_NULL(chess);
+    {
+        return CHESS_NULL_ARGUMENT;
+    }
+    if (tournament_id <= 0) {
+        return CHESS_INVALID_ID;
+    }
+    MAP_FOREACH(Map, iterator, chess->tournamentsById) {
+        //todo: calculate the tournament winner.
+        if (mapContains(chess->tournamentsById, (MapKeyElement) tournament_id)) {
+            mapDestroy(chess->tournamentsById);
+            return CHESS_SUCCESS;
+        }
+        return CHESS_TOURNAMENT_NOT_EXIST;
+    }
+}
+ChessResult chessRemovePlayer(ChessSystem chess, int player_id){
+
+    }
 
 ChessResult chessAddTournament(ChessSystem chess, int tournament_id,
                                int max_games_per_player, const char *tournament_location) {

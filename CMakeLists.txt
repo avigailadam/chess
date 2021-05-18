@@ -9,4 +9,4 @@ add_executable(chess
         chessSystem.c
         chessSystem.h
         libmap.a
-        map.h tournaments.c games.c tournaments.h games.h)
+        map.h tournaments.c tournaments.h)
