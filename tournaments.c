@@ -51,6 +51,7 @@ void free_game_data(GameData game_data) {
 
 void free_game_key(GameKey game_key) {
     free(game_key);
+    free(game_key);
 }
 
 int compare_game_key(GameKey game_key_1, GameKey game_key_2) {
