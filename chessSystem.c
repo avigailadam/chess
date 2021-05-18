@@ -6,13 +6,13 @@
 #include "map.h"
 #include <assert.h>
 #include "chessSystem.h"
+#include "util.h"
 #include "tournaments.h"
 
 #define MIN_LOCATION_LEN 3
 
 
-#define CHECK_NULL(args) if ((args) == NULL) return NULL
-#define NULL_ASSERT(args) assert(args != NULL)
+
 
 typedef int TournamentId;
 
@@ -95,41 +95,42 @@ void chessDestroy(ChessSystem chess) {
 }
 
 ChessResult chessRemoveTournament(ChessSystem chess, int tournament_id) {
-    CHECK_NULL(chess);
-    {
+    if (chess == NULL) {
         return CHESS_NULL_ARGUMENT;
     }
     if (tournament_id <= 0) {
         return CHESS_INVALID_ID;
     }
     MAP_FOREACH(Map, iterator, chess->tournamentsById) {
-        if (mapContains(chess->tournamentsById, (MapKeyElement)tournament_id)){
+        if (mapContains(chess->tournamentsById, (MapKeyElement) tournament_id)) {
+            updateStatisticsForTournament(chess->tournamentsById);
             mapDestroy(chess->tournamentsById);
             return CHESS_SUCCESS;
         }
         return CHESS_TOURNAMENT_NOT_EXIST;
     }
 }
-ChessResult chessEndTournament (ChessSystem chess, int tournament_id) {
-    CHECK_NULL(chess);
-    {
+
+ChessResult chessEndTournament(ChessSystem chess, int tournament_id) {
+    if (chess == NULL) {
         return CHESS_NULL_ARGUMENT;
     }
     if (tournament_id <= 0) {
         return CHESS_INVALID_ID;
     }
-    MAP_FOREACH(Map, iterator, chess->tournamentsById) {
+    MAP_FOREACH(MapKeyElement, iterator, chess->tournamentsById) {
         //todo: calculate the tournament winner.
         if (mapContains(chess->tournamentsById, (MapKeyElement) tournament_id)) {
-            mapDestroy(chess->tournamentsById);
+            int winner = calculateTournamentWinner(chess->tournamentsById);
             return CHESS_SUCCESS;
         }
         return CHESS_TOURNAMENT_NOT_EXIST;
     }
 }
-ChessResult chessRemovePlayer(ChessSystem chess, int player_id){
 
-    }
+ChessResult chessRemovePlayer(ChessSystem chess, int player_id) {
+
+}
 
 ChessResult chessAddTournament(ChessSystem chess, int tournament_id,
                                int max_games_per_player, const char *tournament_location) {

@@ -5,7 +5,7 @@
 #include "map.h"
 #include "chessSystem.h"
 #include "tournaments.h"
-
+#include "util.h"
 #define CHECK_NULL(args) if ((args) == NULL) return NULL
 #define NULL_ASSERT(args) assert(args != NULL)
 
@@ -13,6 +13,7 @@ typedef struct tournament_t {
     Map gameByBothPlayersId;
     int max_games_per_player;
     const char *tournament_location;
+    int winner;
 } *Tournament;
 
 typedef struct game_key_t {
@@ -49,11 +50,16 @@ void free_game_data(GameData game_data) {
 }
 
 void free_game_key(GameKey game_key) {
-    free(game_key)
+    free(game_key);
 }
 
-int compare_game_key(GameKey game_key_1, GameKey game_key_2)
-        Tournament tournamentCreate(int max_games_per_player, const char *location) {
+int compare_game_key(GameKey game_key_1, GameKey game_key_2) {
+    int player_1_diff = game_key_1->player_1_id - game_key_2->player_1_id;
+    int player_2_diff = game_key_1->player_2_id - game_key_2->player_2_id;
+    return player_1_diff + player_2_diff;
+}
+
+Tournament tournamentCreate(int max_games_per_player, const char *location) {
     Tournament tournament = malloc(sizeof(*tournament));
     if (tournament == NULL) {
         return NULL;
@@ -62,4 +68,18 @@ int compare_game_key(GameKey game_key_1, GameKey game_key_2)
                                                 &compare_game_key);
     tournament->tournament_location = location;
     tournament->max_games_per_player = max_games_per_player;
+    tournament->winner = 0;
+}
+
+int calculateTournamentWinner(Tournament tournament) {
+    Map countWinsByPlayers = mapCreate(copyInt, copyInt, freeInt, freeInt, compareInt);
+    MAP_FOREACH(GameKey, gameKey, tournament->gameByBothPlayersId) {
+        GameData data = mapGet(tournament->gameByBothPlayersId, gameKey);
+        CHECK_NULL(data);
+        mapPut(countWinsByPlayers,data->winner,)
+
+    }
+    MAP_FOREACH(GameKey, gameKey, cout) {
+    mapDestroy(countWinsByPlayers);
+    return winner;
 }
