@@ -12,8 +12,6 @@
 #define MIN_LOCATION_LEN 3
 
 
-
-
 typedef int TournamentId;
 
 typedef struct chess_system_t {
@@ -21,18 +19,6 @@ typedef struct chess_system_t {
 } *ChessSystem;
 
 Tournament tournamentCreate(int max_games_per_player, const char *location);
-
-
-void free_tournament_id(TournamentId *id) {
-    NULL_ASSERT(id);
-    free(id);
-}
-
-int compare_tournament_id(TournamentId *id1, TournamentId *id2) {
-    NULL_ASSERT(id1);
-    NULL_ASSERT(id2);
-    return *id1 - *id2;
-}
 
 bool locationIsValid(const char *location) {
     if (location == NULL || strlen(location) < MIN_LOCATION_LEN) {
@@ -42,10 +28,9 @@ bool locationIsValid(const char *location) {
         return false;
     }
     for (int i = 1; i < strlen(location) - 1; ++i) {
-        if (location[i] == ' ' || (location[i] >= 'a' && location[i] <= 'z')) {
-            continue;
+        if (location[i] != ' ' && !(location[i] >= 'a' && location[i] <= 'z')) {
+            return false;
         }
-        return false;
     }
     return true;
 }
@@ -199,7 +184,7 @@ double chessCalculateAveragePlayTime(ChessSystem chess, int player_id, ChessResu
     MAP_FOREACH(int*, tournament_id, chess->tournamentsById) {
         Tournament tournament = mapGet(chess->tournamentsById, &tournament_id);
         NULL_ASSERT(tournament);
-        PlayerStats player_stats = tournamentGetPlayerPlayTime(tournament, player_id);
+        PlayerStats player_stats = tournamentGetPlayerStats(tournament, player_id);
         if (player_stats == NULL)
             continue;
         count += player_stats->num_wins + player_stats->num_losses + player_stats->num_draws;
@@ -214,12 +199,24 @@ double chessCalculateAveragePlayTime(ChessSystem chess, int player_id, ChessResu
 }
 
 ChessResult chessSavePlayersLevels(ChessSystem chess, FILE *file) {
-    Map playersStats = mapCreate(&copy_stats_func,&cop)
+    Map playersStats = mapCreate(&copy_stats_func, &copyInt, &free_stats_func, freeInt,
+                                 compareInt); //key:player_id, data:player stats
     MAP_FOREACH(int*, tournament_id, chess->tournamentsById) {
         Tournament tournament = mapGet(chess->tournamentsById, &tournament_id);
         NULL_ASSERT(tournament);
-        PlayerStats player_stats = tournamentGetPlayerPlayTime(tournament, player_id);
-        if (player_stats == NULL)
-            continue;
+        ChessResult result = tournamentUpdatePlayerStats(tournament, playersStats);
+        if(result != CHESS_SUCCESS) {
+            return result;
+        }
     }
+    MAP_FOREACH(int*, player_id, playersStats) {
+        PlayerStats stats = mapGet(playersStats, player_id);
+        NULL_ASSERT(stats);
+        double level = (double) (6 * stats->num_wins - 10 * stats->num_losses + 2 * stats->num_draws) /
+                       (stats->num_draws + stats->num_losses + stats->num_wins);
+        if (fprintf(file, "%d %2f\n", *player_id, level) < 0) {
+            return CHESS_SAVE_FAILURE;
+        }
+    }
+    return CHESS_SUCCESS;
 }

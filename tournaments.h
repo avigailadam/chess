@@ -20,9 +20,12 @@ bool tournamentRemovePlayer(Tournament tournament, int player_id);
 
 Tournament tournamentCreate(int max_games_per_player, const char *location);
 
-PlayerStats tournamentGetPlayerPlayTime(Tournament tournament, int player_id);
+PlayerStats tournamentGetPlayerStats(Tournament tournament, int player_id);
+
+ChessResult tournamentUpdatePlayerStats(Tournament tournament, Map playersStatsById);
+
+int calculateTournamentWinner(Tournament tournament);
+
+void updateStatisticsForTournament(Tournament tournament);
 
 #endif //CHESS_TOURNAMENTS_H
-
- int calculateTournamentWinner(Tournament tournament);
-void updateStatisticsForTournament(Tournament tournament);
