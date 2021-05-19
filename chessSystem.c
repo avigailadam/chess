@@ -61,6 +61,7 @@ ChessResult chessRemoveTournament(ChessSystem chess, int tournament_id) {
         default:
             assert(false);
     }
+    return CHESS_SUCCESS;
 }
 
 ChessResult chessEndTournament(ChessSystem chess, int tournament_id) {
