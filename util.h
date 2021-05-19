@@ -1,5 +1,7 @@
 #include "chessSystem.h"
 
+#define INVALID_ID -1
+
 #define RETURN_NULL_IF_NULL(args) if ((args) == NULL) return NULL
 #define ASSERT_NOT_NULL(args) assert(args != NULL)
 

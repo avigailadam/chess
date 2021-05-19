@@ -1,7 +1,6 @@
 #ifndef CHESS_TOURNAMENTS_H
 #define CHESS_TOURNAMENTS_H
 
-#define INVALID_ID -1
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,7 +24,7 @@ PlayerStats tournamentGetPlayerStats(Tournament tournament, int player_id);
 
 ChessResult tournamentUpdatePlayerStats(Tournament tournament, Map playersStatsById);
 
-//gets the tournament. return the winner
+// Returns the winner's player ID, or -1 if there are no games.
 int calculateTournamentWinner(Tournament tournament);
 
 void updateStatisticsForTournament(Tournament tournament);
