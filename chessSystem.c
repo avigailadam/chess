@@ -3,14 +3,13 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <string.h>
-#include "map.h"
 #include <assert.h>
+#include "map.h"
 #include "chessSystem.h"
 #include "util.h"
 #include "tournaments.h"
 
 #define MIN_LOCATION_LEN 3
-
 
 typedef int TournamentId;
 
@@ -67,8 +66,8 @@ void chessDestroy(ChessSystem chess) {
     if (chess == NULL) {
         return;
     }
-    MAP_FOREACH(Map, iterator, chess->tournamentsById) {
-        mapDestroy(chess->tournamentsById);
+    MAP_FOREACH(Map, tournament, chess->tournamentsById) {
+        mapDestroy(tournament);
     }
     free(chess);
 }
@@ -80,10 +79,10 @@ ChessResult chessRemoveTournament(ChessSystem chess, int tournament_id) {
     if (tournament_id <= 0) {
         return CHESS_INVALID_ID;
     }
-    MAP_FOREACH(Map, iterator, chess->tournamentsById) {
-        if (mapContains(chess->tournamentsById, (MapKeyElement) tournament_id)) {
-            updateStatisticsForTournament(chess->tournamentsById);
-            mapDestroy(chess->tournamentsById);
+    MAP_FOREACH(Map, tournament, chess->tournamentsById) {
+        if (mapContains(tournament, (MapKeyElement) tournament_id)) {
+            updateStatisticsForTournament(tournament);
+            mapDestroy(tournament);
             return CHESS_SUCCESS;
         }
         return CHESS_TOURNAMENT_NOT_EXIST;
@@ -97,14 +96,13 @@ ChessResult chessEndTournament(ChessSystem chess, int tournament_id) {
     if (tournament_id <= 0) {
         return CHESS_INVALID_ID;
     }
-    MAP_FOREACH(MapKeyElement, iterator, chess->tournamentsById) {
-        //todo: calculate the tournament winner.
-        if (mapContains(chess->tournamentsById, (MapKeyElement) tournament_id)) {
-            int winner = calculateTournamentWinner(chess->tournamentsById);
-            return CHESS_SUCCESS;
-        }
+
+    MapDataElement tournament = mapGet(chess->tournamentsById, (MapKeyElement) tournament_id);
+    if (tournament==NULL) {
         return CHESS_TOURNAMENT_NOT_EXIST;
     }
+    int winner = calculateTournamentWinner(tournament);
+    return CHESS_SUCCESS;
 }
 
 ChessResult chessRemovePlayer(ChessSystem chess, int player_id) {
@@ -205,7 +203,7 @@ ChessResult chessSavePlayersLevels(ChessSystem chess, FILE *file) {
         Tournament tournament = mapGet(chess->tournamentsById, &tournament_id);
         NULL_ASSERT(tournament);
         ChessResult result = tournamentUpdatePlayerStats(tournament, playersStats);
-        if(result != CHESS_SUCCESS) {
+        if (result != CHESS_SUCCESS) {
             return result;
         }
     }

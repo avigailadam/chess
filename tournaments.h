@@ -24,8 +24,12 @@ PlayerStats tournamentGetPlayerStats(Tournament tournament, int player_id);
 
 ChessResult tournamentUpdatePlayerStats(Tournament tournament, Map playersStatsById);
 
-int calculateTournamentWinner(Tournament tournament);
+int calculateTournamentWinner(Map players_by_id, Tournament tournament);
 
 void updateStatisticsForTournament(Tournament tournament);
+
+int getNumOfLosses(int player);
+
+int getNumOfWins(int player);
 
 #endif //CHESS_TOURNAMENTS_H
