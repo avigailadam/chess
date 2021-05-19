@@ -8,5 +8,8 @@ include_directories(.)
 add_executable(chess
         chessSystem.c
         chessSystem.h
+        util.h
+        tournaments.c
+        tournaments.h
         libmap.a
-        map.h tournaments.c tournaments.h)
+        map.h)

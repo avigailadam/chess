@@ -11,6 +11,10 @@
 
 #define MIN_LOCATION_LEN 3
 
+#define PRINT_INT_TO_FILE(func, arg_to_func, arg, file) arg = func(arg_to_func);\
+        assert(arg >= 0);\
+        fprintf(file, "%d\n", arg)
+
 typedef int TournamentId;
 
 typedef struct chess_system_t {
@@ -56,8 +60,8 @@ ChessResult convertResults(MapResult result) {
 ChessSystem chessCreate() {
     ChessSystem result = malloc(sizeof(*result));
     CHECK_NULL(result);
-    result->tournamentsById = mapCreate(&copy_tournament, &copyInt, &free_tournament, &free_tournament_id,
-                                        &compare_tournament_id);
+    result->tournamentsById = mapCreate(&copyTournament, &copyInt, &freeTournament, &freeInt,
+                                        &compareInt);
     CHECK_NULL(result->tournamentsById);
     return result;
 }
@@ -197,7 +201,7 @@ double chessCalculateAveragePlayTime(ChessSystem chess, int player_id, ChessResu
 }
 
 ChessResult chessSavePlayersLevels(ChessSystem chess, FILE *file) {
-    Map playersStats = mapCreate(&copy_stats_func, &copyInt, &free_stats_func, freeInt,
+    Map playersStats = mapCreate(&copyStatsFunc, &copyInt, &freeStatsFunc, freeInt,
                                  compareInt); //key:player_id, data:player stats
     MAP_FOREACH(int*, tournament_id, chess->tournamentsById) {
         Tournament tournament = mapGet(chess->tournamentsById, &tournament_id);
@@ -217,4 +221,27 @@ ChessResult chessSavePlayersLevels(ChessSystem chess, FILE *file) {
         }
     }
     return CHESS_SUCCESS;
+}
+
+ChessResult chessSaveTournamentStatistics(ChessSystem chess, char *path_file) {
+    FILE *file = fopen(path_file, "w");
+    bool tournament_has_ended = false;
+    MAP_FOREACH(int*, tournament_key, chess->tournamentsById) {
+        Tournament tournament = mapGet(chess->tournamentsById, tournament_key);
+        NULL_ASSERT(tournament);
+        if (tournamentHasEnded(tournament) == false) {
+            continue;
+        }
+        tournament_has_ended = true;
+        int tmp;
+        PRINT_INT_TO_FILE(getWinner, tournament, tmp, file);
+        PRINT_INT_TO_FILE(longestGameTime, tournament, tmp, file);
+        PRINT_INT_TO_FILE(averageGameTime, tournament, tmp, file);
+        const char *location = getLocation(tournament);
+        assert(location != NULL);
+        fprintf(file, "%s\n", location);
+        PRINT_INT_TO_FILE(getNumberOfPlayers, tournament, tmp, file);
+        PRINT_INT_TO_FILE(getNumberOfGames, tournament, tmp, file);
+    }
+    return tournament_has_ended ? CHESS_SUCCESS : CHESS_NO_TOURNAMENTS_ENDED;
 }

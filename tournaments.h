@@ -1,12 +1,7 @@
 #ifndef CHESS_TOURNAMENTS_H
 #define CHESS_TOURNAMENTS_H
 
-typedef struct play_stats_t {
-    int num_wins;
-    int num_losses;
-    int num_draws;
-    double total_play_time;
-} *PlayerStats;
+#include "util.h"
 
 typedef struct tournament_t *Tournament;
 
@@ -31,5 +26,21 @@ void updateStatisticsForTournament(Tournament tournament);
 int getNumOfLosses(int player);
 
 int getNumOfWins(int player);
+
+int getWinner(Tournament tournament);//return -1 if fails
+
+double longestGameTime(Tournament tournament);//return -1 if fails
+
+double averageGameTime(Tournament tournament);//return -1 if fails
+
+const char *getLocation(Tournament tournament);//return NULL if fails
+
+int getNumberOfPlayers(Tournament tournament);//return -1 if fails
+
+int getNumberOfGames(Tournament tournament);//return -1 if fails
+
+Tournament copyTournament(Tournament tournament);
+
+void freeTournament(Tournament tournament);
 
 #endif //CHESS_TOURNAMENTS_H
