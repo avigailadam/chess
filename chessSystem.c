@@ -102,10 +102,10 @@ ChessResult chessEndTournament(ChessSystem chess, int tournament_id) {
     }
 
     MapDataElement tournament = mapGet(chess->tournamentsById, (MapKeyElement) tournament_id);
-    if (tournament==NULL) {
+    if (tournament == NULL) {
         return CHESS_TOURNAMENT_NOT_EXIST;
     }
-    int winner = calculateTournamentWinner(tournament);
+    int winner = calculateTournamentWinner(, tournament);
     return CHESS_SUCCESS;
 }
 

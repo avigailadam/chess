@@ -9,13 +9,33 @@
 
 #define CHECK_NULL(args) if ((args) == NULL) return NULL
 #define NULL_ASSERT(args) assert(args != NULL)
-
+#define FIRST_PLACE(scorer) \
+do {                        \
+MapKeyElement best_player = mapGetFirst(scores); \
+MAP_FOREACH(int*, player, players_by_id) {       \
+if (scorer(scores, player) >= scorer(scores, best_player)) {\
+best_player = player;\
+}\
+}\
+MAP_FOREACH(int*, player, players_by_id) {\
+if (scorer(scores, best_player)>scorer(scores, player)) {\
+mapRemove(scores, player);\
+}\
+}\
+if (mapGetSize(scores) == 1) {\
+int winner = (int) mapGetFirst(scores);\
+mapDestroy(scores);\
+mapDestroy(players_by_id_copy);\
+return winner;\
+}\
+}while(0)
 typedef struct tournament_t {
     Map gameByBothPlayersId;
     int max_games_per_player;
     const char *tournament_location;
     int winner;
-} *Tournament;
+} *
+        Tournament;
 
 typedef struct game_key_t {
     int player_1_id;
@@ -72,62 +92,76 @@ Tournament tournamentCreate(int max_games_per_player, const char *location) {
     tournament->winner = 0;
 }
 
-//void addToValue(Map scores, int player_id, int add) {
-//    if (!mapContains(scores, (MapKeyElement) (player_id))) {
-//        mapPut(scores, (MapKeyElement) player_id, &0);
-//    }
-//    int *old_value = mapGet(scores, (MapKeyElement) player_id);
-//    *old_value += add;
-//    mapPut(scores, (MapKeyElement) player_id, old_value);
-//}
+static int getNumOfWinsAux(Map scores, int *player) {
 
-int *creatScoreTable(Map scores, int num_of_players) {
-    int *table = (int *) malloc(sizeof(int) * num_of_players);
-    int count = 0;
-    MAP_FOREACH(Map, player, scores) {
-        table[count] = (int) mapGet(scores, player);
-        count++;
-    }
-
-
-    return table;
 }
 
-int calculateTournamentWinner(Map players_by_id, Tournament tournament) {
-    Map players_by_id_copy = mapCopy(players_by_id);
-    NULL_ASSERT(players_by_id);
-    Map scores = mapCreate(&copyInt, &copyInt, &copyInt, &copyInt, &compareInt);
+static int getNumOfLosses(Map scores, int *player) {
+
+}
+
+void addPlayerStats(Map result, GameData this_game_data, int player_id) {
+
+}
+
+static Map getStatsByPlayer(Tournament tournament) {
+    Map result = mapCreate(copyStatsFunc, copyInt, freeStatsFunc, freeInt, compareInt);
+    NULL_ASSERT(result);
+    MAP_FOREACH(GameKey, key, tournament->gameByBothPlayersId) {
+        GameData this_game_data = mapGet(tournament->gameByBothPlayersId, key);
+        if (mapContains(result, (MapKeyElement) key->player_1_id) == false) {
+            struct play_stats_t stats;
+            if (this_game_data->winner == FIRST_PLAYER) {
+                stats.num_wins++;
+            }
+            if (this_game_data->winner == SECOND_PLAYER) {
+                stats.num_losses++;
+            }
+            if (this_game_data->winner == DRAW) {
+                stats.num_draws++;
+            }
+            mapPut(result, &key->player_1_id, &stats);
+        }
+        if (mapContains(result, (MapKeyElement) key->player_2_id) == false) {
+            struct play_stats_t stats;
+            if (this_game_data->winner == FIRST_PLAYER) {
+                stats.num_losses++;
+            }
+            if (this_game_data->winner == SECOND_PLAYER) {
+                stats.num_wins++;
+            }
+            if (this_game_data->winner == DRAW) {
+                stats.num_draws++;
+            }
+            mapPut(result, &key->player_2_id, &stats);
+        }
+        addPlayerStats(result, this_game_data, key->player_1_id);
+        addPlayerStats(result, this_game_data, key->player_2_id);
+    }
+    return result;
+}
+
+int calculateTournamentWinner(Tournament tournament) {
+    Map players_to_stats = getStatsByPlayer(tournament);
+    CHECK_NULL(players_to_stats);
+    Map scores = mapCreate(copyInt, copyInt, freeInt, freeInt, compareInt);
     CHECK_NULL(scores);
-    MAP_FOREACH(Map, player, players_by_id) {
-        PlayerStats playerStats = tournamentGetPlayerStats(tournament, player);
-        int score = (playerStats->num_draws) * 1 + (playerStats->num_wins) * 2;
-        mapPut(scores, (MapKeyElement) player, (MapDataElement) score);
+    MAP_FOREACH(int*, player, players_to_stats) {
+        PlayerStats playerState = tournamentGetPlayerStats(tournament, *player);
+        int score = (playerState->num_draws) * 1 + (playerState->num_wins) * 2;
+        mapPut(scores, player, &score);
+        freeStatsFunc(playerState);
     }
-    MapKeyElement best_player = mapGetFirst(scores);
-    MAP_FOREACH(Map, player, players_by_id) {
-        if (mapGet(scores, player) >= mapGet(scores, best_player)) {
-            best_player = player;
-        }
-    }
-    MAP_FOREACH(Map, player, players_by_id) {
-        if (mapGet(scores, player) < mapGet(scores, best_player)) {
-            mapRemove(scores, player);
-        }
-    }
-    if (mapGetSize(scores) == 1) {
-        int winner = (int) mapGetFirst(scores);
-        mapDestroy(scores);
-        mapDestroy(players_by_id_copy);
-        return winner;
-    }
+
+    FIRST_PLACE(mapGet);
     MapKeyElement least_losses = mapGetFirst(scores);
-    MAP_FOREACH(Map, player, players_by_id) {
-        if (getNumOfLosses((int) least_losses) >= getNumOfLosses((int) player)) {
+    MAP_FOREACH(int*, player, players_by_id) {
+        if (getNumOfLosses(scores, least_losses) >= getNumOfLosses(scores, player)) {
             least_losses = player;
         }
     }
-    MAP_FOREACH(Map, player, players_by_id) {
-        if (getNumOfLosses((int) least_losses) < getNumOfLosses((int) player)) {
+    MAP_FOREACH(int*, player, players_by_id) {
+        if (getNumOfLosses(scores, player) > getNumOfLosses(scores, least_losses)) {
             mapRemove(scores, player);
         }
     }
@@ -137,53 +171,9 @@ int calculateTournamentWinner(Map players_by_id, Tournament tournament) {
         mapDestroy(players_by_id_copy);
         return winner;
     }
-    MapKeyElement most_wins = mapGetFirst(scores);
-    MAP_FOREACH(Map, player, players_by_id) {
-        if (getNumOfWins((int) most_wins) <= getNumOfWins((int) player)) {
-            most_wins = player;
-        }
-    }
-    MAP_FOREACH(Map, player, players_by_id) {
-        if (getNumOfWins((int) most_wins) > getNumOfWins((int) player)) {
-            mapRemove(scores, player);
-        }
-    }
-    if (mapGetSize(scores) == 1) {
-        int winner = (int) mapGetFirst(scores);
-        mapDestroy(scores);
-        mapDestroy(players_by_id_copy);
-        return winner;
-    }
+    FIRST_PLACE(getNumOfWinsAux);
     int winner = (int) mapGetFirst(scores);
     mapDestroy(scores);
     mapDestroy(players_by_id_copy);
     return winner;
 }
-/* Map countWinsByPlayers = mapCreate(copyInt, copyInt, freeInt, freeInt, compareInt);
- MAP_FOREACH(GameKey, gameKey, tournament->gameByBothPlayersId) {
-     GameData data = mapGet(tournament->gameByBothPlayersId, gameKey);
-     CHECK_NULL(data);
-     int player_1_score_change = 0;
-     int player_2_score_change = 0;
-
-     if (data->winner == FIRST_PLAYER) {
-         player_1_score_change = 2;
-     }
-     if (data->winner == SECOND_PLAYER)
-         player_2_score_change = 2;;
-     if (data->winner == DRAW) {
-         player_1_score_change = 1;
-         player_2_score_change = 1;
-     }
-     addToValue(countWinsByPlayers, gameKey->player_1_id, player_1_score_change);
-     addToValue(countWinsByPlayers, gameKey->player_2_id, player_2_score_change);
- }
- winner=
- MAP_FOREACH(MapKeyElement , players, countWinsByPlayers){
-     if(winner>=)
- }
-
-     mapDestroy(countWinsByPlayers);
-     return winner;
- }
- */

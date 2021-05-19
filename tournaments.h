@@ -19,13 +19,10 @@ PlayerStats tournamentGetPlayerStats(Tournament tournament, int player_id);
 
 ChessResult tournamentUpdatePlayerStats(Tournament tournament, Map playersStatsById);
 
-int calculateTournamentWinner(Map players_by_id, Tournament tournament);
+//gets the tournament. return the winner
+int calculateTournamentWinner(Tournament tournament);
 
 void updateStatisticsForTournament(Tournament tournament);
-
-int getNumOfLosses(int player);
-
-int getNumOfWins(int player);
 
 int getWinner(Tournament tournament);//return -1 if fails
 
