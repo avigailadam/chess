@@ -1,9 +1,15 @@
+#ifndef CHESS_UTIL_H
+#define CHESS_UTIL_H
+
 #include "chessSystem.h"
 
 #define INVALID_ID -1
 
 #define RETURN_NULL_IF_NULL(args) if ((args) == NULL) return NULL
+
 #define ASSERT_NOT_NULL(args) assert(args != NULL)
+
+#define INVALID_ID -1
 
 typedef struct play_stats_t {
     int num_wins;
@@ -29,6 +35,7 @@ int compareInt(const int *id1, const int *id2) {
     return *id1 - *id2;
 }
 
+
 void freeStatsFunc(PlayerStats stats) {
     free(stats);
 }
@@ -43,7 +50,6 @@ PlayerStats copyStatsFunc(PlayerStats stats) {
     new->total_play_time = stats->total_play_time;
     return new;
 }
-
 
 ChessResult convertResults(MapResult result) {
     if (result == MAP_SUCCESS) {
@@ -64,7 +70,16 @@ ChessResult convertResults(MapResult result) {
     assert(0);
 }
 
-#ifndef CHESS_UTIL_H
-#define CHESS_UTIL_H
+#define MAP_FOREACH_VALUE(key_type, key_iter, value_type, value_iter, free_key_iter, map) \
+    value_type value_iter = NULL;                                                         \
+    key_type key_iter = (key_type) mapGetFirst(map);                                      \
+    value_iter = (value_type)(key_iter ? mapGet(map, key_iter) : value_iter);             \
+    for( ;                                                                                \
+        key_iter && (ASSERT_NOT_NULL(value_iter), true);                                  \
+        free_key_iter(key_iter),                                                          \
+        key_iter = mapGetNext(map),                                                       \
+        value_iter = key_iter ? (value_type)mapGet(map, key_iter) : value_iter)
+
+#define FOREACH_PLAYER_STATS(map) MAP_FOREACH_VALUE(int*, player_id, PlayerStats, player_stats, freeInt, map)
 
 #endif //CHESS_UTIL_H

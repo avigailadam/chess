@@ -1,7 +1,6 @@
 #ifndef CHESS_TOURNAMENTS_H
 #define CHESS_TOURNAMENTS_H
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -28,25 +27,22 @@ ChessResult tournamentUpdatePlayerStats(Tournament tournament, Map playersStatsB
 int calculateTournamentWinner(Tournament tournament);
 
 void updateStatisticsForTournament(Tournament tournament);
+int getWinner(Tournament tournament);//return INVALID_ID if fails
 
-int getWinner(Tournament tournament);//return -1 if fails
+double longestGameTime(Tournament tournament);//return INVALID_ID if fails
 
-double longestGameTime(Tournament tournament);//return -1 if fails
-
-double averageGameTime(Tournament tournament);//return -1 if fails
+double averageGameTime(Tournament tournament);//return INVALID_ID if fails
 
 const char *getLocation(Tournament tournament);//return NULL if fails
 
-int getNumberOfPlayers(Tournament tournament);//return -1 if fails
+int getNumberOfPlayers(Tournament tournament);//return INVALID_ID if fails
 
-int getNumberOfGames(Tournament tournament);//return -1 if fails
+int getNumberOfGames(Tournament tournament);//return INVALID_ID if fails
 
 Tournament copyTournament(Tournament tournament);
 
 void freeTournament(Tournament tournament);
 
-bool endTournament(Tournament tournament);//update tournament winner, return false if it has already ended
-
-
+bool endTournament(Tournament tournament); // Return false if already ended.
 
 #endif //CHESS_TOURNAMENTS_H
