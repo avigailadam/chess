@@ -1,15 +1,21 @@
 #ifndef CHESS_TOURNAMENTS_H
 #define CHESS_TOURNAMENTS_H
 
+#define INVALID_ID -1
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <assert.h>
+#include "map.h"
 #include "util.h"
 
 typedef struct tournament_t *Tournament;
 
-bool doesGameExist(int first_player, int second_player);
+// also checks if game already exists.
+ChessResult gameCreate(Tournament tournament, int first_player, int second_player, Winner winner, int play_time);
 
-ChessResult gameCreate(int first_player, int second_player, Winner winner, int play_time);
-
-bool tournamentHasEnded(Tournament);
+bool tournamentHasEnded(Tournament tournament);
 
 bool tournamentRemovePlayer(Tournament tournament, int player_id);
 
@@ -39,5 +45,9 @@ int getNumberOfGames(Tournament tournament);//return -1 if fails
 Tournament copyTournament(Tournament tournament);
 
 void freeTournament(Tournament tournament);
+
+bool endTournament(Tournament tournament);//update tournament winner, return false if it has already ended
+
+
 
 #endif //CHESS_TOURNAMENTS_H
