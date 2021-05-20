@@ -27,7 +27,6 @@ typedef struct tournament_t {
     int max_games_per_player;
     const char *location;
     int winner;
-    int participants;
 } *Tournament;
 
 typedef struct game_key_t {
@@ -141,9 +140,12 @@ static ChessResult addPlayerStats(Map stats_by_players, int player_id_winner, in
 }
 
 #define UPDATE_DRAW(player_id) do {          \
- stats = mapGet(result, &gameId->player_id); \
- ASSERT_NOT_NULL(stats);                     \
- stats->num_draws++; } while(0)
+ stats = mapGet(stats_by_players, &player_id); \
+ ASSERT_NOT_NULL(stats);\
+ stats->num_draws++;                         \
+ mapPut(stats_by_players,&player_id,stats)   ;\
+  freeStatsFunc(stats)   ;                    \
+  } while(0)
 
 #define UPDATE_WINNER(player_id_winner, player_id_loser) \
 do {if (addPlayerStats(result, player_id_winner, player_id_loser) != MAP_SUCCESS) { \
@@ -153,35 +155,31 @@ do {if (addPlayerStats(result, player_id_winner, player_id_loser) != MAP_SUCCESS
 
 // Returns NULL if allocation failed.
 static Map getStatsByPlayer(Tournament tournament) {
-    Map result = mapCreate((copyMapDataElements) &copyStatsFunc, (copyMapKeyElements) &copyInt,
-                           (freeMapDataElements) &freeStatsFunc, (freeMapKeyElements) &freeInt,
-                           (compareMapKeyElements) &compareInt);
-    RETURN_NULL_IF_NULL(result);
+    Map stats_by_players = mapCreate((copyMapDataElements) &copyStatsFunc, (copyMapKeyElements) &copyInt,
+                                     (freeMapDataElements) &freeStatsFunc, (freeMapKeyElements) &freeInt,
+                                     (compareMapKeyElements) &compareInt);
+    RETURN_NULL_IF_NULL(stats_by_players);
 
     FOREACH_GAME {
-        if (
-                addEmptyStatsIfNotExists(result, gameId->player_1_id) != MAP_SUCCESS ||
-                addEmptyStatsIfNotExists(result, gameId->player_2_id) != MAP_SUCCESS) {
-            mapDestroy(result);
-            return NULL;
-        }
+        addEmptyStatsIfNotExists(stats_by_players, gameId->player_1_id);
+        addEmptyStatsIfNotExists(stats_by_players, gameId->player_2_id);
         PlayerStats stats;
         switch (gameData->winner) {
             case FIRST_PLAYER:
-                UPDATE_WINNER(gameId->player_1_id, gameId->player_2_id);
+                addPlayerStats(stats_by_players, gameId->player_1_id, gameId->player_2_id);
                 break;
             case SECOND_PLAYER:
-                UPDATE_WINNER(gameId->player_2_id, gameId->player_1_id);
+                addPlayerStats(stats_by_players, gameId->player_2_id, gameId->player_1_id);
                 break;
             case DRAW:
-                UPDATE_DRAW(player_1_id);
-                UPDATE_DRAW(player_2_id);
+                UPDATE_DRAW(gameId->player_1_id);
+                UPDATE_DRAW(gameId->player_2_id);
                 break;
             default:
                 assert(0);
         }
     }
-    return result;
+    return stats_by_players;
 }
 
 // result=INVALID_ID if there is no winner.
@@ -198,10 +196,10 @@ static ChessResult calculateTournamentWinner(Tournament tournament, int *result)
                        (freeMapKeyElements) &freeInt, (compareMapKeyElements) &compareInt);
     RETURN_NULL_IF_NULL(scores);//theres a problem here
     MAP_FOREACH(int*, player, players_to_stats) {
-        PlayerStats playerState = tournamentGetPlayerStats(tournament, *player);
-        int score = (playerState->num_draws) * 1 + (playerState->num_wins) * 2;
+        PlayerStats player_state = tournamentGetPlayerStats(tournament, *player);
+        int score = (player_state->num_draws) * 1 + (player_state->num_wins) * 2;
         mapPut(scores, player, &score);
-        freeStatsFunc(playerState);
+        freeStatsFunc(player_state);
     }
 
     FIRST_PLACE(mapGet);//problem here
