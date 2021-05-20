@@ -22,13 +22,13 @@ mapDestroy(scores);\
 mapDestroy(players_to_stats);      \
 return CHESS_SUCCESS;}\
 }while(0)
-typedef struct tournament_t {
+struct tournament_t {
     Map gameByBothPlayersId;
     int max_games_per_player;
     const char *location;
     int winner;
     int participants;
-} *Tournament;
+};
 
 typedef struct game_key_t {
     int player_1_id;

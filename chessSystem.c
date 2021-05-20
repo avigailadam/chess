@@ -9,9 +9,9 @@
 
 #define FOREACH_TOURNAMENT MAP_FOREACH_VALUE(int*, tournament_id, Tournament, tournament, freeInt, chess->tournamentsById)
 
-typedef struct chess_system_t {
+struct chess_system_t {
     Map tournamentsById;
-} *ChessSystem;
+};
 
 static bool locationIsValid(const char *location) {
     if (location == NULL || strlen(location) < MIN_LOCATION_LEN) {
