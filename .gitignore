@@ -3,3 +3,6 @@ cmake-build*
 coverage*
 out
 *.txt
+*.gch
+chess
+*.o
