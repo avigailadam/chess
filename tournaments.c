@@ -188,7 +188,6 @@ static ChessResult calculateTournamentWinner(Tournament tournament, int *result)
     ASSERT_NOT_NULL(result);
     Map players_to_stats = getStatsByPlayer(tournament);
     if (players_to_stats == NULL) {
-        *result = CHESS_OUT_OF_MEMORY;
         return CHESS_OUT_OF_MEMORY;
     }
     if (mapGetSize(tournament->gameByBothPlayersId) == 0) {
@@ -202,12 +201,11 @@ static ChessResult calculateTournamentWinner(Tournament tournament, int *result)
                        (freeMapDataElements) &freeInt,
                        (freeMapKeyElements) &freeInt, (compareMapKeyElements) &compareInt);
     if (scores == NULL) {
-        *result = CHESS_OUT_OF_MEMORY;
         return CHESS_OUT_OF_MEMORY;
     }
     MAP_FOREACH(int*, player, players_to_stats) {
-        struct play_stats_t player_state = tournamentGetPlayerStats(tournament, *player, result);
-        int score = (player_state.num_draws) * 1 + (player_state.num_wins) * 2;
+        PlayerStats player_state = mapGet(players_to_stats, player);
+        int score = (player_state->num_draws) * 1 + (player_state->num_wins) * 2;
         mapPut(scores, player, &score);
     }
 
