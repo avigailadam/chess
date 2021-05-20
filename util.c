@@ -1,8 +1,10 @@
 #ifndef CHESS_UTIL_H
 #define CHESS_UTIL_H
 
+#include "assert.h"
 #include "chessSystem.h"
 #include "map.h"
+#include <stdlib.h>
 
 #define INVALID_ID -1
 
@@ -21,17 +23,57 @@ typedef struct play_stats_t {
     double total_play_time;
 } *PlayerStats;
 
-int *copyInt(const int *id);
+int *copyInt(const int *id) {
+    RETURN_NULL_IF_NULL(id);
+    int *new_id = malloc(sizeof(*new_id));
+    return new_id;
+}
 
-void freeInt(int *id);
+void freeInt(int *id) {
+    ASSERT_NOT_NULL(id);
+    free(id);
+}
 
-int compareInt(const int *id1, const int *id2);
+int compareInt(const int *id1, const int *id2) {
+    ASSERT_NOT_NULL(id1);
+    ASSERT_NOT_NULL(id2);
+    return *id1 - *id2;
+}
 
-void freeStatsFunc(PlayerStats stats);
 
-PlayerStats copyStatsFunc(PlayerStats stats);
+void freeStatsFunc(PlayerStats stats) {
+    free(stats);
+}
 
-ChessResult convertResults(MapResult result);
+PlayerStats copyStatsFunc(PlayerStats stats) {
+    RETURN_NULL_IF_NULL(stats);
+    PlayerStats new = malloc(sizeof(*new));
+    RETURN_NULL_IF_NULL(new);
+    new->num_wins = stats->num_wins;
+    new->num_losses = stats->num_losses;
+    new->num_draws = stats->num_draws;
+    new->total_play_time = stats->total_play_time;
+    return new;
+}
+
+ChessResult convertResults(MapResult result) {
+    if (result == MAP_SUCCESS) {
+        return CHESS_SUCCESS;
+    }
+    if (result == MAP_NULL_ARGUMENT) {
+        return CHESS_NULL_ARGUMENT;
+    }
+    if (result == MAP_ITEM_ALREADY_EXISTS) {
+        return CHESS_TOURNAMENT_ALREADY_EXISTS;
+    }
+    if (result == MAP_ITEM_DOES_NOT_EXIST) {
+        return CHESS_TOURNAMENT_NOT_EXIST;
+    }
+    if (result == MAP_OUT_OF_MEMORY) {
+        return CHESS_OUT_OF_MEMORY;
+    }
+    assert(0);
+}
 
 #define MAP_FOREACH_VALUE(key_type, key_iter, value_type, value_iter, free_key_iter, map) \
     value_type value_iter = NULL;                                                         \
