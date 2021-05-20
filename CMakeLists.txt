@@ -13,5 +13,4 @@ add_executable(chess
         tournaments.h
         libmap.a
         map.h)
-
 target_link_libraries(chess libmap.a)

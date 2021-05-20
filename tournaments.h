@@ -19,14 +19,11 @@ bool tournamentRemovePlayer(Tournament tournament, int player_id);
 
 Tournament tournamentCreate(int max_games_per_player, const char *location);
 
-PlayerStats tournamentGetPlayerStats(Tournament tournament, int player_id);
+// Returns empty if player did not participate in tournament.
+struct play_stats_t tournamentGetPlayerStats(Tournament tournament, int player_id, ChessResult *chessResult);
 
 ChessResult tournamentUpdatePlayerStats(Tournament tournament, Map playersStatsById);
 
-// Returns the winner's player ID, or -1 if there are no games.
-int calculateTournamentWinner(Tournament tournament);
-
-void updateStatisticsForTournament(Tournament tournament);
 int getWinner(Tournament tournament);//return INVALID_ID if fails
 
 double longestGameTime(Tournament tournament);//return INVALID_ID if fails
@@ -43,6 +40,6 @@ Tournament copyTournament(Tournament tournament);
 
 void freeTournament(Tournament tournament);
 
-bool endTournament(Tournament tournament); // Return false if already ended.
+ChessResult endTournament(Tournament tournament); // Return false if already ended.
 
 #endif //CHESS_TOURNAMENTS_H

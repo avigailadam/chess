@@ -11,6 +11,8 @@
 
 #define INVALID_ID -1
 
+#define RETURN_IF_NOT_SUCCESS(result) do { ChessResult temp = (result); if (temp != CHESS_SUCCESS) return temp; } while(0)
+
 typedef struct play_stats_t {
     int num_wins;
     int num_losses;

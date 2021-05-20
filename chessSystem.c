@@ -13,7 +13,7 @@ typedef struct chess_system_t {
     Map tournamentsById;
 } *ChessSystem;
 
-bool locationIsValid(const char *location) {
+static bool locationIsValid(const char *location) {
     if (location == NULL || strlen(location) < MIN_LOCATION_LEN) {
         return false;
     }
@@ -72,10 +72,7 @@ ChessResult chessEndTournament(ChessSystem chess, int tournament_id) {
     }
 
     Tournament tournament = mapGet(chess->tournamentsById, &tournament_id);
-    if (tournament == NULL) {
-        return CHESS_TOURNAMENT_NOT_EXIST;
-    }
-    return endTournament(tournament) ? CHESS_SUCCESS : CHESS_TOURNAMENT_ENDED;
+    return tournament == NULL ? CHESS_TOURNAMENT_NOT_EXIST : endTournament(tournament);
 }
 
 ChessResult chessRemovePlayer(ChessSystem chess, int player_id) {
@@ -87,9 +84,6 @@ ChessResult chessRemovePlayer(ChessSystem chess, int player_id) {
     }
     bool was_removed = false;
     FOREACH_TOURNAMENT {
-        if (tournamentHasEnded(tournament)) {
-            continue;
-        }
         was_removed = was_removed || tournamentRemovePlayer(tournament, player_id);
     }
     return was_removed ? CHESS_SUCCESS : CHESS_PLAYER_NOT_EXIST;
@@ -119,13 +113,6 @@ ChessResult chessAddTournament(ChessSystem chess, int tournament_id,
                     mapPut(chess->tournamentsById, (MapKeyElement) &tournament_id, (MapDataElement) tournament));
 }
 
-bool isPlayerAlreadyInTournament(Tournament tournament, int player_id) {
-    PlayerStats stats = tournamentGetPlayerStats(tournament, player_id);
-    bool result = stats != NULL;
-    freeStatsFunc(stats);
-    return result;
-}
-
 ChessResult chessAddGame(ChessSystem chess, int tournament_id, int first_player,
                          int second_player, Winner winner, int play_time) {
     switch (winner) {
@@ -153,6 +140,7 @@ ChessResult chessAddGame(ChessSystem chess, int tournament_id, int first_player,
 }
 
 double chessCalculateAveragePlayTime(ChessSystem chess, int player_id, ChessResult *chess_result) {
+    ASSERT_NOT_NULL(chess_result);
     if (chess == NULL) {
         *chess_result = CHESS_NULL_ARGUMENT;
         return 0;
@@ -164,11 +152,12 @@ double chessCalculateAveragePlayTime(ChessSystem chess, int player_id, ChessResu
     int count = 0;
     double total_play_time = 0;
     FOREACH_TOURNAMENT {
-        PlayerStats player_stats = tournamentGetPlayerStats(tournament, player_id);
-        if (player_stats == NULL)
-            continue;
-        count += player_stats->num_wins + player_stats->num_losses + player_stats->num_draws;
-        total_play_time += player_stats->total_play_time;
+        struct play_stats_t player_stats = tournamentGetPlayerStats(tournament, player_id, chess_result);
+        if (*chess_result != CHESS_SUCCESS)
+            return 0;
+
+        count += player_stats.num_wins + player_stats.num_losses + player_stats.num_draws;
+        total_play_time += player_stats.total_play_time;
     }
     if (count == 0) {
         *chess_result = CHESS_PLAYER_NOT_EXIST;
@@ -182,20 +171,21 @@ ChessResult chessSavePlayersLevels(ChessSystem chess, FILE *file) {
     Map playersStats = mapCreate((copyMapDataElements) &copyStatsFunc, (copyMapKeyElements) &copyInt,
                                  (freeMapDataElements) &freeStatsFunc, (freeMapKeyElements) &freeInt,
                                  (compareMapKeyElements) &compareInt); //key:player_id, data:player stats
+    if (playersStats == NULL)
+        return CHESS_OUT_OF_MEMORY;
     FOREACH_TOURNAMENT {
-        ChessResult result = tournamentUpdatePlayerStats(tournament, playersStats);
-        if (result != CHESS_SUCCESS) {
-            return result;
-        }
+        RETURN_IF_NOT_SUCCESS(tournamentUpdatePlayerStats(tournament, playersStats));
     }
     FOREACH_PLAYER_STATS(playersStats) {
         double level =
                 (double) (6 * player_stats->num_wins - 10 * player_stats->num_losses + 2 * player_stats->num_draws) /
                 (player_stats->num_draws + player_stats->num_losses + player_stats->num_wins);
         if (fprintf(file, "%d %2f\n", *player_id, level) < 0) {
+            mapDestroy(playersStats);
             return CHESS_SAVE_FAILURE;
         }
     }
+    mapDestroy(playersStats);
     return CHESS_SUCCESS;
 }
 
@@ -212,7 +202,7 @@ ChessResult chessSaveTournamentStatistics(ChessSystem chess, char *path_file) {
         PRINT_INT_TO_FILE(longestGameTime, tournament, tmp, file);
         PRINT_INT_TO_FILE(averageGameTime, tournament, tmp, file);
         const char *location = getLocation(tournament);
-        assert(location != NULL);
+        ASSERT_NOT_NULL(location);
         fprintf(file, "%s\n", location);
         PRINT_INT_TO_FILE(getNumberOfPlayers, tournament, tmp, file);
         PRINT_INT_TO_FILE(getNumberOfGames, tournament, tmp, file);

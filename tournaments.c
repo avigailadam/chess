@@ -1,7 +1,5 @@
 #include "tournaments.h"
 
-#define REMOVE_PLAYER(player_to_remove, winner_player)  (player_to_remove) = INVALID_ID;\
-                                                        gameData->winner = winner_player
 #define FOREACH_GAME MAP_FOREACH_VALUE(GameKey, gameId, GameData, gameData, free_game_key, tournament->gameByBothPlayersId)
 
 #define FIRST_PLACE(scorer) \
@@ -29,6 +27,7 @@ typedef struct tournament_t {
     int max_games_per_player;
     const char *location;
     int winner;
+    int participants;
 } *Tournament;
 
 typedef struct game_key_t {
@@ -42,16 +41,24 @@ typedef struct game_t {
     int duration;
 } *GameData;
 
-void addEmptyStatsIfNotExists(Map stats, int player_id) {
+struct play_stats_t createEmptyStats();
+
+MapResult addEmptyStatsIfNotExists(Map stats, int player_id) {
+    ASSERT_NOT_NULL(stats);
     if (mapContains(stats, (&player_id))) {
-        return;
+        return MAP_SUCCESS;
     }
+    struct play_stats_t empty = createEmptyStats();
+    return mapPut(stats, &player_id, &empty);
+}
+
+struct play_stats_t createEmptyStats() {
     struct play_stats_t empty;
     empty.total_play_time = 0;
     empty.num_draws = 0;
     empty.num_losses = 0;
     empty.num_wins = 0;
-    mapPut(stats, &player_id, &empty);
+    return empty;
 }
 
 GameKey copy_game_key(GameKey game_key) {
@@ -99,6 +106,7 @@ Tournament tournamentCreate(int max_games_per_player, const char *location) {
     tournament->location = location;
     tournament->max_games_per_player = max_games_per_player;
     tournament->winner = INVALID_ID;
+    tournament->participants = 0;
     return tournament;
 }
 
@@ -120,18 +128,16 @@ static int getNumOfLosses(Map scores, int *player) {
     return result;
 }
 
-void addPlayerStats(Map stats_by_players, GameData this_game_data, int player_id_winner, int player_id_loser) {
+static ChessResult addPlayerStats(Map stats_by_players, int player_id_winner, int player_id_loser) {
     assert(stats_by_players != NULL);
     PlayerStats stats_winner = mapGet(stats_by_players, &player_id_winner);
     ASSERT_NOT_NULL(stats_winner);
     stats_winner->num_wins++;
-    mapPut(stats_by_players, &player_id_winner, stats_winner);
-    freeStatsFunc(stats_winner);
+    RETURN_IF_NOT_SUCCESS(convertResults(mapPut(stats_by_players, &player_id_winner, stats_winner)));
     PlayerStats stats_loser = mapGet(stats_by_players, &player_id_loser);
     ASSERT_NOT_NULL(stats_loser);
     stats_loser->num_losses++;
-    mapPut(stats_by_players, &player_id_loser, stats_loser);
-    freeStatsFunc(stats_loser);
+    return convertResults(mapPut(stats_by_players, &player_id_loser, stats_loser));
 }
 
 #define UPDATE_DRAW(player_id) do {          \
@@ -139,52 +145,58 @@ void addPlayerStats(Map stats_by_players, GameData this_game_data, int player_id
  ASSERT_NOT_NULL(stats);                     \
  stats->num_draws++; } while(0)
 
+#define UPDATE_WINNER(player_id_winner, player_id_loser) \
+do {if (addPlayerStats(result, player_id_winner, player_id_loser) != MAP_SUCCESS) { \
+  mapDestroy(result); \
+  return NULL; \
+}} while(0)
 
+// Returns NULL if allocation failed.
 static Map getStatsByPlayer(Tournament tournament) {
     Map result = mapCreate((copyMapDataElements) &copyStatsFunc, (copyMapKeyElements) &copyInt,
                            (freeMapDataElements) &freeStatsFunc, (freeMapKeyElements) &freeInt,
                            (compareMapKeyElements) &compareInt);
-    ASSERT_NOT_NULL(result);
+    RETURN_NULL_IF_NULL(result);
 
     FOREACH_GAME {
-        addEmptyStatsIfNotExists(result, gameId->player_1_id);
-        addEmptyStatsIfNotExists(result, gameId->player_2_id);
+        if (
+                addEmptyStatsIfNotExists(result, gameId->player_1_id) != MAP_SUCCESS ||
+                addEmptyStatsIfNotExists(result, gameId->player_2_id) != MAP_SUCCESS) {
+            mapDestroy(result);
+            return NULL;
+        }
         PlayerStats stats;
         switch (gameData->winner) {
             case FIRST_PLAYER:
-                addPlayerStats(result, gameData, gameId->player_1_id, gameId->player_2_id);
+                UPDATE_WINNER(gameId->player_1_id, gameId->player_2_id);
                 break;
             case SECOND_PLAYER:
-                addPlayerStats(result, gameData, gameId->player_2_id, gameId->player_1_id);
+                UPDATE_WINNER(gameId->player_2_id, gameId->player_1_id);
                 break;
             case DRAW:
                 UPDATE_DRAW(player_1_id);
                 UPDATE_DRAW(player_2_id);
+                break;
             default:
                 assert(0);
         }
-        if (gameData->winner == FIRST_PLAYER) {
-            addPlayerStats(result, gameData, gameId->player_1_id, FIRST_PLAYER);
-            continue;
-        }
-        if (gameData->winner == SECOND_PLAYER) {
-            addPlayerStats(result, gameData, gameId->player_2_id, SECOND_PLAYER);
-            continue;
-        }
-        addPlayerStats(result, gameData, gameId->player_2_id, DRAW);
     }
     return result;
 }
 
-int calculateTournamentWinner(Tournament tournament) {
+// result=INVALID_ID if there is no winner.
+// TODO finish this!
+static ChessResult calculateTournamentWinner(Tournament tournament, int *result) {
+    ASSERT_NOT_NULL(result);
     Map players_to_stats = getStatsByPlayer(tournament);
+    // TODO check if null.
     if (mapGetSize(players_to_stats) == 0) {
         return INVALID_ID;
     }
     Map scores;
     scores = mapCreate((copyMapDataElements) &copyInt, (copyMapKeyElements) &copyInt, (freeMapDataElements) &freeInt,
                        (freeMapKeyElements) &freeInt, (compareMapKeyElements) &compareInt);
-    RETURN_NULL_IF_NULL(scores);
+    RETURN_NULL_IF_NULL(scores);//theres a problem here
     MAP_FOREACH(int*, player, players_to_stats) {
         PlayerStats playerState = tournamentGetPlayerStats(tournament, *player);
         int score = (playerState->num_draws) * 1 + (playerState->num_wins) * 2;
@@ -192,7 +204,7 @@ int calculateTournamentWinner(Tournament tournament) {
         freeStatsFunc(playerState);
     }
 
-    FIRST_PLACE(mapGet);
+    FIRST_PLACE(mapGet);//problem here
     MapKeyElement least_losses = mapGetFirst(scores);
     MAP_FOREACH(int*, player, players_to_stats) {
         if (getNumOfLosses(scores, least_losses) >= getNumOfLosses(scores, player)) {
@@ -205,16 +217,49 @@ int calculateTournamentWinner(Tournament tournament) {
         }
     }
     if (mapGetSize(scores) == 1) {
-        int winner = (int) mapGetFirst(scores);
+        int winner = (int) mapGetFirst(scores);//problem here, notice it returns a pointer
         mapDestroy(scores);
         mapDestroy(players_to_stats);
         return winner;
     }
-    FIRST_PLACE(getNumOfWinsAux);
-    int winner = (int) mapGetFirst(scores);
+    FIRST_PLACE(getNumOfWinsAux);//here too
+    int winner = (int) mapGetFirst(scores);// also here
     mapDestroy(scores);
     mapDestroy(players_to_stats);
-    return winner;
+    *result = winner;
+    return CHESS_SUCCESS;
+}
+
+ChessResult countGamesPerPlayer(Tournament tournament, int player_id, int *result) {
+    ASSERT_NOT_NULL(result);
+    *result = 0;
+    Map stats = getStatsByPlayer(tournament);
+    if (stats == NULL) {
+        return CHESS_OUT_OF_MEMORY;
+    }
+    ASSERT_NOT_NULL(stats);
+    PlayerStats statsForPlayer = mapGet(stats, &player_id);
+    if (statsForPlayer != NULL) {
+        *result = statsForPlayer->num_draws + statsForPlayer->num_losses + statsForPlayer->num_wins;
+    }
+    mapDestroy(stats);
+    return CHESS_SUCCESS;
+}
+
+ChessResult getNewPlayers(Tournament tournament, int player_1_id, int player_2_id, int *result) {
+    *result = 0;
+    Map stats = getStatsByPlayer(tournament);
+    if (stats == NULL) {
+        return CHESS_OUT_OF_MEMORY;
+    }
+    if (mapContains(stats, &player_1_id) == false) {
+        *result += 1;
+    }
+    if (mapContains(stats, &player_2_id) == false) {
+        *result += 1;
+    }
+    mapDestroy(stats);
+    return CHESS_SUCCESS;
 }
 
 ChessResult gameCreate(Tournament tournament, int first_player, int second_player, Winner winner, int play_time) {
@@ -228,9 +273,27 @@ ChessResult gameCreate(Tournament tournament, int first_player, int second_playe
     if (mapContains(tournament->gameByBothPlayersId, &key)) {
         return CHESS_GAME_ALREADY_EXISTS;
     }
+    int gamesPerPlayer1;
+    int gamesPerPlayer2;
+    if (countGamesPerPlayer(tournament, first_player, &gamesPerPlayer1)) {
+        return CHESS_OUT_OF_MEMORY;
+    }
+    if (countGamesPerPlayer(tournament, second_player, &gamesPerPlayer2)) {
+        return CHESS_OUT_OF_MEMORY;
+    }
+    if (gamesPerPlayer1 >= tournament->max_games_per_player ||
+        gamesPerPlayer2 >= tournament->max_games_per_player) {
+        assert(gamesPerPlayer1 == tournament->max_games_per_player ||
+               gamesPerPlayer2 == tournament->max_games_per_player);
+        return CHESS_EXCEEDED_GAMES;
+    }
+
     struct game_t data;
     data.winner = winner;
     data.duration = play_time;
+    int newPlayers;
+    RETURN_IF_NOT_SUCCESS(getNewPlayers(tournament, first_player, second_player, &newPlayers));
+    tournament->participants += newPlayers;
     return convertResults(mapPut(tournament->gameByBothPlayersId, &key, &data));
 }
 
@@ -249,12 +312,11 @@ bool tournamentRemovePlayer(Tournament tournament, int player_id) {
             continue;
         }
         playerExists = true;
-        assert(!(isPlayer1 && isPlayer2));
-        if (isPlayer1) {
-            REMOVE_PLAYER(gameId->player_1_id, SECOND_PLAYER);
-        }
-        if (isPlayer2) {
-            REMOVE_PLAYER(gameId->player_2_id, FIRST_PLAYER);
+        assert(!isPlayer1 || !isPlayer2);
+        assert(isPlayer1 || isPlayer2);
+        *(isPlayer1 ? &gameId->player_1_id : &gameId->player_2_id) = INVALID_ID;
+        if (tournamentHasEnded(tournament) == false) {
+            gameData->winner = isPlayer1 ? SECOND_PLAYER : FIRST_PLAYER;
         }
     }
     return playerExists;
@@ -287,7 +349,7 @@ int getNumberOfGames(Tournament tournament) {
 
 int getNumberOfPlayers(Tournament tournament) {
     ASSERT_NOT_NULL(tournament);
-    return mapGetSize(getStatsByPlayer(tournament));
+    return tournament->participants;
 }
 
 double averageGameTime(Tournament tournament) {
@@ -320,12 +382,18 @@ int getWinner(Tournament tournament) {
     return tournament->winner;
 }
 
-bool endTournament(Tournament tournament) {
+ChessResult endTournament(Tournament tournament) {
     ASSERT_NOT_NULL(tournament);
     if (tournament->winner != INVALID_ID)
-        return false;
-    tournament->winner = calculateTournamentWinner(tournament);
-    return true;
+        return CHESS_TOURNAMENT_ENDED;
+    int winner;
+    RETURN_IF_NOT_SUCCESS(calculateTournamentWinner(tournament, &winner));
+    if (winner == INVALID_ID) {
+        // Eh, not really, because it would also happen if all players are removed from the tournament.
+        return CHESS_NO_GAMES;
+    }
+    tournament->winner = winner;
+    return CHESS_SUCCESS;
 }
 
 ChessResult tournamentUpdatePlayerStats(Tournament tournament, Map playersStatsById) {
@@ -348,8 +416,16 @@ ChessResult tournamentUpdatePlayerStats(Tournament tournament, Map playersStatsB
     return CHESS_SUCCESS;
 }
 
-PlayerStats tournamentGetPlayerStats(Tournament tournament, int player_id) {
-    PlayerStats result = mapGet(getStatsByPlayer(tournament), &player_id);
-    ASSERT_NOT_NULL(result);
-    return result;
+struct play_stats_t tournamentGetPlayerStats(Tournament tournament, int player_id, ChessResult *chessResult) {
+    ASSERT_NOT_NULL(chessResult);
+    Map stats = getStatsByPlayer(tournament);
+    if (stats == NULL) {
+        *chessResult = CHESS_OUT_OF_MEMORY;
+        return createEmptyStats();
+    }
+    PlayerStats playerStats = mapGet(stats, &player_id);
+    *chessResult = CHESS_SUCCESS;
+    struct play_stats_t results = playerStats == NULL ? createEmptyStats() : *playerStats;
+    mapDestroy(stats);
+    return results;
 }
