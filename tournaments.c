@@ -88,9 +88,11 @@ void free_game_key(GameKey game_key) {
 }
 
 int compare_game_key(GameKey game_key_1, GameKey game_key_2) {
-    int player_1_diff = game_key_1->player_1_id - game_key_2->player_1_id;
-    int player_2_diff = game_key_1->player_2_id - game_key_2->player_2_id;
-    return player_1_diff + player_2_diff;
+    int first_compare = compareInt(&game_key_1->player_1_id, &game_key_2->player_1_id);
+    if (first_compare != 0) {
+        return first_compare;
+    }
+    return compareInt(&game_key_1->player_2_id, &game_key_2->player_2_id);
 }
 
 Tournament tournamentCreate(int max_games_per_player, const char *location) {
