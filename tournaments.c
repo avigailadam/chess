@@ -211,6 +211,7 @@ static ChessResult calculateTournamentWinner(Tournament tournament, int *result)
         PlayerStats player_state = mapGet(players_to_stats, player);
         int score = (player_state->num_draws) * 1 + (player_state->num_wins) * 2;
         mapPut(scores, player, &score);
+        free(player);
     }
 
     FIRST_PLACE(mapGet, result);
@@ -219,11 +220,13 @@ static ChessResult calculateTournamentWinner(Tournament tournament, int *result)
         if (getNumOfLosses(scores, least_losses) >= getNumOfLosses(scores, player)) {
             least_losses = player;
         }
+        free(player);
     }
     MAP_FOREACH(int*, player, players_to_stats) {
         if (getNumOfLosses(scores, player) > getNumOfLosses(scores, least_losses)) {
             mapRemove(scores, player);
         }
+        free(player);
     }
     if (mapGetSize(scores) == 1) {
         int *winner = mapGetFirst(scores);
