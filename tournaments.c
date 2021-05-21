@@ -382,7 +382,7 @@ double longestGameTime(Tournament tournament) {
     FOREACH_GAME {
         int time = gameData->duration;
         assert(time > 0);
-        max = max > time ? time : max;
+        max = max < time ? time : max;
     }
     assert(max > 0);
     return max;
