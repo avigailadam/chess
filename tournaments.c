@@ -3,21 +3,26 @@
 #define FOREACH_GAME MAP_FOREACH_VALUE(GameKey, gameId, GameData, gameData, free_game_key, tournament->gameByBothPlayersId)
 
 #define FIRST_PLACE(scorer, result) \
-    do {                        \
-        int* best_player = mapGetFirst(scores); \
+    do {                            \
+        int* temp = mapGetFirst(scores);\
+        int best_player = *temp;    \
+        free(temp);                            \
         MAP_FOREACH(int*, player, scores) {       \
-            if (scorer(scores, player) >= scorer(scores, best_player)) {\
-                best_player = player;\
-            }\
+            if (scorer(scores, player) >= scorer(scores, &best_player)) {\
+                best_player = *player;\
+            }                       \
+            free(player);                            \
         }\
-        MAP_FOREACH(int*, player, scores) {\
-            if (scorer(scores, best_player)>scorer(scores, player)) {\
+        MAP_FOREACH(int*, player, players_to_stats) {\
+            if (scorer(scores, &best_player)>scorer(scores, player)) {\
                 mapRemove(scores, player);\
-            }\
+            }                       \
+            free(player);                        \
         }\
         if (mapGetSize(scores) == 1) {\
             int* winner= mapGetFirst(scores);\
-            *result=*winner;       \
+            *result=*winner;        \
+            free(winner);\
             mapDestroy(scores);\
             mapDestroy(players_to_stats);      \
             return CHESS_SUCCESS;   \
