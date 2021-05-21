@@ -3,25 +3,26 @@
 #define FOREACH_GAME MAP_FOREACH_VALUE(GameKey, gameId, GameData, gameData, free_game_key, tournament->gameByBothPlayersId)
 
 #define FIRST_PLACE(scorer, result) \
-do {                        \
-int* best_player = mapGetFirst(scores); \
-MAP_FOREACH(int*, player, scores) {       \
-if (scorer(scores, player) >= scorer(scores, best_player)) {\
-best_player = player;\
-}\
-}\
-MAP_FOREACH(int*, player, scores) {\
-if (scorer(scores, best_player)>scorer(scores, player)) {\
-mapRemove(scores, player);\
-}\
-}\
-if (mapGetSize(scores) == 1) {\
-      int* winner= mapGetFirst(scores);\
-*result=*winner;       \
-mapDestroy(scores);\
-mapDestroy(players_to_stats);      \
-return CHESS_SUCCESS;}\
-}while(0)
+    do {                        \
+        int* best_player = mapGetFirst(scores); \
+        MAP_FOREACH(int*, player, scores) {       \
+            if (scorer(scores, player) >= scorer(scores, best_player)) {\
+                best_player = player;\
+            }\
+        }\
+        MAP_FOREACH(int*, player, scores) {\
+            if (scorer(scores, best_player)>scorer(scores, player)) {\
+                mapRemove(scores, player);\
+            }\
+        }\
+        if (mapGetSize(scores) == 1) {\
+            int* winner= mapGetFirst(scores);\
+            *result=*winner;       \
+            mapDestroy(scores);\
+            mapDestroy(players_to_stats);      \
+            return CHESS_SUCCESS;   \
+        }\
+    } while(0)
 struct tournament_t {
     Map gameByBothPlayersId;
     int max_games_per_player;
