@@ -103,6 +103,10 @@ Tournament tournamentCreate(int max_games_per_player, const char *location) {
                                                 (freeMapDataElements) &free_game_data,
                                                 (freeMapKeyElements) &free_game_key,
                                                 (compareMapKeyElements) &compare_game_key);
+    if (tournament->gameByBothPlayersId == NULL) {
+        free(tournament);
+        return NULL;
+    }
     tournament->location = location;
     tournament->max_games_per_player = max_games_per_player;
     tournament->winner = INVALID_ID;
@@ -145,7 +149,7 @@ static ChessResult addPlayerStats(Map stats_by_players, int player_id_winner, in
 ASSERT_NOT_NULL(stats);                             \
 stats->num_draws++;} while(0)
 #define UPDATE_WINNER(player_id_winner, player_id_loser) \
-do {if (addPlayerStats(stats_by_players, player_id_winner, player_id_loser) != MAP_SUCCESS) { \
+do {if (addPlayerStats(stats_by_players, player_id_winner, player_id_loser) != CHESS_SUCCESS) { \
   mapDestroy(stats_by_players); \
   return NULL; \
 }} while(0)
@@ -163,8 +167,6 @@ static Map getStatsByPlayer(Tournament tournament) {
             mapDestroy(stats_by_players);
             return NULL;
         }
-        addEmptyStatsIfNotExists(stats_by_players, gameId->player_1_id);
-        addEmptyStatsIfNotExists(stats_by_players, gameId->player_2_id);
         switch (gameData->winner) {
             case FIRST_PLAYER:
                 UPDATE_WINNER(gameId->player_1_id, gameId->player_2_id);
@@ -282,10 +284,10 @@ gameCreate(Tournament tournament, int first_player, int second_player, Winner wi
     }
     int gamesPerPlayer1;
     int gamesPerPlayer2;
-    if (countGamesPerPlayer(tournament, first_player, &gamesPerPlayer1)) {
+    if (countGamesPerPlayer(tournament, first_player, &gamesPerPlayer1) == CHESS_OUT_OF_MEMORY) {
         return CHESS_OUT_OF_MEMORY;
     }
-    if (countGamesPerPlayer(tournament, second_player, &gamesPerPlayer2)) {
+    if (countGamesPerPlayer(tournament, second_player, &gamesPerPlayer2) == CHESS_OUT_OF_MEMORY) {
         return CHESS_OUT_OF_MEMORY;
     }
     if (gamesPerPlayer1 >= tournament->max_games_per_player ||
@@ -332,6 +334,7 @@ bool tournamentRemovePlayer(Tournament tournament, int player_id) {
 Tournament copyTournament(Tournament tournament) {
     Tournament new = tournamentCreate(tournament->max_games_per_player, tournament->location);
     RETURN_NULL_IF_NULL(new);
+    mapDestroy(new->gameByBothPlayersId);
     new->gameByBothPlayersId = mapCopy(tournament->gameByBothPlayersId);
     RETURN_NULL_IF_NULL(new->gameByBothPlayersId);
     new->winner = tournament->winner;

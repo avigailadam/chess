@@ -34,7 +34,10 @@ ChessSystem chessCreate() {
     result->tournamentsById = mapCreate((copyMapDataElements) &copyTournament, (copyMapKeyElements) &copyInt,
                                         (freeMapDataElements) &freeTournament, (freeMapKeyElements) &freeInt,
                                         (compareMapKeyElements) &compareInt);
-    RETURN_NULL_IF_NULL(result->tournamentsById);
+    if (result->tournamentsById == NULL) {
+        free(result);
+        return NULL;
+    }
     return result;
 }
 
@@ -101,17 +104,20 @@ ChessResult chessAddTournament(ChessSystem chess, int tournament_id,
     if (!locationIsValid(tournament_location)) {
         return CHESS_INVALID_LOCATION;
     }
-    if (mapContains(chess->tournamentsById, (MapKeyElement) &tournament_id) == true) {
+    if (mapContains(chess->tournamentsById, &tournament_id)) {
         return CHESS_TOURNAMENT_ALREADY_EXISTS;
     }
     if (max_games_per_player <= 0) {
         return CHESS_INVALID_MAX_GAMES;
     }
     Tournament tournament = tournamentCreate(max_games_per_player, tournament_location);
-    return tournament == NULL
-           ? CHESS_OUT_OF_MEMORY
-           : convertResults(
-                    mapPut(chess->tournamentsById, (MapKeyElement) &tournament_id, (MapDataElement) tournament));
+    if (tournament == NULL) {
+        return CHESS_OUT_OF_MEMORY;
+    }
+    ChessResult result =
+            convertResults(mapPut(chess->tournamentsById, (MapKeyElement) &tournament_id, (MapDataElement) tournament));
+    freeTournament(tournament);
+    return result;
 }
 
 ChessResult chessAddGame(ChessSystem chess, int tournament_id, int first_player,
