@@ -131,6 +131,14 @@ static int getNumOfWinsAux(Map scores, int *player) {
     return result;
 }
 
+
+static int mapGetAux(Map scores, int *player) {
+    ASSERT_NOT_NULL(scores);
+    int *result = mapGet(scores, player);
+    ASSERT_NOT_NULL(result);
+    return *result;
+}
+
 static int getNumOfLosses(Map scores, int *player) {
     assert(scores != NULL);
     PlayerStats stats = mapGet(scores, &player);
@@ -193,7 +201,6 @@ static Map getStatsByPlayer(Tournament tournament) {
     return stats_by_players;
 }
 
-
 static ChessResult calculateTournamentWinner(Tournament tournament, int *result) {
     ASSERT_NOT_NULL(result);
     Map players_to_stats = getStatsByPlayer(tournament);
@@ -220,7 +227,7 @@ static ChessResult calculateTournamentWinner(Tournament tournament, int *result)
         free(player);
     }
 
-    FIRST_PLACE(mapGet, result);
+    FIRST_PLACE(mapGetAux, result);
     MapKeyElement least_losses = mapGetFirst(scores);
     MAP_FOREACH(int*, player, players_to_stats) {
         if (getNumOfLosses(scores, least_losses) >= getNumOfLosses(scores, player)) {
