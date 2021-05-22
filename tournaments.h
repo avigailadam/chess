@@ -22,6 +22,7 @@ Tournament tournamentCreate(int max_games_per_player, const char *location);
 // Returns empty if player did not participate in tournament.
 struct play_stats_t tournamentGetPlayerStats(Tournament tournament, int player_id, ChessResult *chessResult);
 
+// Updates the given map with the current tournament stats.
 ChessResult tournamentUpdatePlayerStats(Tournament tournament, Map playersStatsById);
 
 int getWinner(Tournament tournament);//return INVALID_ID if fails

@@ -28,8 +28,21 @@ add_executable(maptests
         libmap.a
         map.h)
 
+add_executable(maarooftests
+        chessSystemTestsExample.c
+        chessSystem.c
+        chessSystem.h
+        util.h
+        util.c
+        tournaments.c
+        tournaments.h
+        libmap.a
+        map.h)
+
 
 target_link_libraries(chess libmap.a)
 target_link_libraries(maptests libmap.a)
+target_link_libraries(maarooftests libmap.a)
 set_property(TARGET chess PROPERTY POSITION_INDEPENDENT_CODE FALSE)
 set_property(TARGET maptests PROPERTY POSITION_INDEPENDENT_CODE FALSE)
+set_property(TARGET maarooftests PROPERTY POSITION_INDEPENDENT_CODE FALSE)
