@@ -26,6 +26,7 @@ typedef struct play_stats_t {
 int *copyInt(const int *id) {
     ASSERT_NOT_NULL(id);
     int *new_id = malloc(sizeof(*new_id));
+    RETURN_NULL_IF_NULL(new_id);
     *new_id = *id;
     return new_id;
 }

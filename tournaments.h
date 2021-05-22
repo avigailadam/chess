@@ -15,7 +15,7 @@ ChessResult gameCreate(Tournament tournament, int first_player, int second_playe
 
 bool tournamentHasEnded(Tournament tournament);
 
-bool tournamentRemovePlayer(Tournament tournament, int player_id);
+ChessResult tournamentRemovePlayer(Tournament tournament, int player_id);
 
 Tournament tournamentCreate(int max_games_per_player, const char *location);
 

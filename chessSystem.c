@@ -88,7 +88,8 @@ ChessResult chessRemovePlayer(ChessSystem chess, int player_id) {
     }
     bool was_removed = false;
     FOREACH_TOURNAMENT {
-        was_removed = was_removed || tournamentRemovePlayer(tournament, player_id);
+        bool result = tournamentRemovePlayer(tournament, player_id) == CHESS_SUCCESS;
+        was_removed = was_removed || result;
     }
     return was_removed ? CHESS_SUCCESS : CHESS_PLAYER_NOT_EXIST;
 }
@@ -139,11 +140,14 @@ ChessResult chessAddGame(ChessSystem chess, int tournament_id, int first_player,
     if (play_time < 0) {
         return CHESS_INVALID_PLAY_TIME;
     }
-
     Tournament tournament = mapGet(chess->tournamentsById, &tournament_id);
-    return tournament == NULL
-           ? CHESS_TOURNAMENT_NOT_EXIST
+    if (tournament == NULL) {
+        return CHESS_TOURNAMENT_NOT_EXIST;
+    }
+    return tournamentHasEnded(tournament)
+           ? CHESS_TOURNAMENT_ENDED
            : gameCreate(tournament, first_player, second_player, winner, play_time);
+
 }
 
 double chessCalculateAveragePlayTime(ChessSystem chess, int player_id, ChessResult *chess_result) {
