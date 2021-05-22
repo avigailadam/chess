@@ -94,6 +94,9 @@ void free_game_key(GameKey game_key) {
 }
 
 int compare_game_key(GameKey game_key_1, GameKey game_key_2) {
+    if (game_key_1->player_1_id == game_key_2->player_2_id && game_key_1->player_2_id == game_key_2->player_1_id) {
+        return 0;
+    }
     int first_compare = compareInt(&game_key_1->player_1_id, &game_key_2->player_1_id);
     if (first_compare != 0) {
         return first_compare;
