@@ -262,6 +262,9 @@ static ChessResult calculateTournamentWinner(Tournament tournament, int *result)
 ChessResult countGamesPerPlayer(Tournament tournament, int player_id, int *result) {
     ASSERT_NOT_NULL(result);
     *result = 0;
+    if (player_id == INVALID_ID) {
+        return CHESS_SUCCESS;
+    }
     Map stats = getStatsByPlayer(tournament);
     if (stats == NULL) {
         return CHESS_OUT_OF_MEMORY;
