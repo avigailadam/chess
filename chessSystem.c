@@ -1,7 +1,7 @@
 #include <string.h>
 #include "tournaments.h"
 
-#define MIN_LOCATION_LEN 3
+#define MIN_LOCATION_LEN 1
 
 #define PRINT_INT_TO_FILE(func, arg_to_func, arg, file) arg = func(arg_to_func);\
         assert(arg >= 0);\
@@ -13,7 +13,7 @@ struct chess_system_t {
     Map tournamentsById;
 };
 
-static bool locationIsValid(const char *location) {
+static bool isValidLocation(const char *location) {
     if (location == NULL || strlen(location) < MIN_LOCATION_LEN) {
         return false;
     }
@@ -95,17 +95,17 @@ ChessResult chessRemovePlayer(ChessSystem chess, int player_id) {
 
 ChessResult chessAddTournament(ChessSystem chess, int tournament_id,
                                int max_games_per_player, const char *tournament_location) {
-    if (chess == NULL) {
+    if (chess == NULL || tournament_location == NULL) {
         return CHESS_NULL_ARGUMENT;
     }
     if (tournament_id <= 0) {
         return CHESS_INVALID_ID;
     }
-    if (!locationIsValid(tournament_location)) {
-        return CHESS_INVALID_LOCATION;
-    }
     if (mapContains(chess->tournamentsById, &tournament_id)) {
         return CHESS_TOURNAMENT_ALREADY_EXISTS;
+    }
+    if (!isValidLocation(tournament_location)) {
+        return CHESS_INVALID_LOCATION;
     }
     if (max_games_per_player <= 0) {
         return CHESS_INVALID_MAX_GAMES;
