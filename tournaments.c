@@ -336,24 +336,44 @@ bool tournamentHasEnded(Tournament tournament) {
     return tournament->winner > 0;
 }
 
+static ChessResult removePlayer(Tournament tournament, GameKey key, int player_id) {
+    GameData data = mapGet(tournament->gameByBothPlayersId, key);
+    ASSERT_NOT_NULL(data);
+    bool should_remove_first_player = key->player_1_id == player_id;
+    bool new_winner_if_not_ended = should_remove_first_player ? SECOND_PLAYER : FIRST_PLAYER;
+    Winner winner = tournamentHasEnded(tournament) ? data->winner : new_winner_if_not_ended;
+    int player_1_id = should_remove_first_player ? INVALID_ID : key->player_1_id;
+    int player_2_id = should_remove_first_player ? key->player_2_id : INVALID_ID;
+    int time = data->duration;
+    RETURN_IF_NOT_SUCCESS(convertResults(mapRemove(tournament->gameByBothPlayersId, key)));
+    RETURN_IF_NOT_SUCCESS(gameCreate(tournament, player_1_id, player_2_id, winner, time));
+    return CHESS_SUCCESS;
+}
+
 bool tournamentRemovePlayer(Tournament tournament, int player_id) {
     ASSERT_NOT_NULL(tournament);
-    bool playerExists = false;
+    int size = mapGetSize(tournament->gameByBothPlayersId);
+    GameKey *keys = malloc(size * sizeof(keys));
+    int index = 0;
     FOREACH_GAME {
         bool isPlayer1 = compareInt(&(gameId->player_1_id), &player_id) == 0;
         bool isPlayer2 = compareInt(&(gameId->player_2_id), &player_id) == 0;
         if (!isPlayer1 && !isPlayer2) {
             continue;
         }
-        playerExists = true;
         assert(!isPlayer1 || !isPlayer2);
         assert(isPlayer1 || isPlayer2);
-        *(isPlayer1 ? &gameId->player_1_id : &gameId->player_2_id) = INVALID_ID;
-        if (tournamentHasEnded(tournament) == false) {
-            gameData->winner = isPlayer1 ? SECOND_PLAYER : FIRST_PLAYER;
-        }
+        keys[index++] = copy_game_key(gameId);
     }
-    return playerExists;
+    for (int i = 0; i < index; ++i) {
+        ChessResult result = removePlayer(tournament, keys[i], player_id);
+        assert(result == CHESS_SUCCESS);
+    }
+    for (int i = 0; i < index; ++i) {
+        free_game_key(keys[i]);
+    }
+    free(keys);
+    return index > 0;
 }
 
 Tournament copyTournament(Tournament tournament) {
