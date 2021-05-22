@@ -291,11 +291,12 @@ ChessResult getNewPlayers(Tournament tournament, int player_1_id, int player_2_i
     return CHESS_SUCCESS;
 }
 
-ChessResult
-gameCreate(Tournament tournament, int first_player, int second_player, Winner winner, int play_time) {
+ChessResult gameCreate(
+        Tournament tournament, int first_player, int second_player, Winner winner, int play_time) {
     ASSERT_NOT_NULL(tournament);
-    assert(first_player >= 0);
-    assert(second_player >= 0);
+    if (tournamentHasEnded(tournament)) {
+        return CHESS_TOURNAMENT_ENDED;
+    }
     assert(play_time >= 0);
     struct game_key_t key;
     key.player_1_id = first_player;
