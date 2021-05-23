@@ -6,15 +6,14 @@
 #include "map.h"
 #include <stdlib.h>
 
-#define INVALID_ID -1
+#define INVALID_ID 0
 
 #define RETURN_NULL_IF_NULL(args) if ((args) == NULL) return NULL
 
 #define ASSERT_NOT_NULL(args) assert(args != NULL)
 
-#define INVALID_ID -1
-
-#define RETURN_IF_NOT_SUCCESS(result) do { ChessResult temp = (result); if (temp != CHESS_SUCCESS) return temp; } while(0)
+#define RETURN_IF_NOT_SUCCESS(result) do { ChessResult temp = (result); if (temp != CHESS_SUCCESS) return temp; \
+} while(0)
 
 typedef struct play_stats_t {
     int num_wins;
