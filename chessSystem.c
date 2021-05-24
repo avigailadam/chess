@@ -6,6 +6,9 @@
 #define PRINT_INT_TO_FILE(func, arg_to_func, arg, file) (arg) = func(arg_to_func);\
         assert((arg) >= 0);\
         fprintf(file, "%d\n", (arg))
+#define PRINT_DOUBLE_TO_FILE(func, arg_to_func, arg, file) (arg) = func(arg_to_func);\
+        assert((arg) >= 0);\
+        fprintf(file, "%.2f\n", (arg))
 
 #define FOREACH_TOURNAMENT MAP_FOREACH_VALUE(int*, tournament_id, Tournament,\
                                             tournament, freeInt, chess->tournaments_by_id)
@@ -190,7 +193,7 @@ ChessResult chessSavePlayersLevels(ChessSystem chess, FILE *file) {
         double level =
                 (double) (6 * player_stats->num_wins - 10 * player_stats->num_losses + 2 * player_stats->num_draws) /
                 (player_stats->num_draws + player_stats->num_losses + player_stats->num_wins);
-        if (fprintf(file, "%d %2f\n", *player_id, level) < 0) {
+        if (fprintf(file, "%d %.2f\n", *player_id, level) < 0) {
             mapDestroy(players_stats);
             return CHESS_SAVE_FAILURE;
         }
@@ -208,9 +211,10 @@ ChessResult chessSaveTournamentStatistics(ChessSystem chess, char *path_file) {
         }
         tournament_has_ended = true;
         int tmp;
+        double tmp_double;
         PRINT_INT_TO_FILE(getWinner, tournament, tmp, file);
         PRINT_INT_TO_FILE(longestGameTime, tournament, tmp, file);
-        PRINT_INT_TO_FILE(averageGameTime, tournament, tmp, file);
+        PRINT_DOUBLE_TO_FILE(averageGameTime, tournament, tmp_double, file);
         const char *location = getLocation(tournament);
         ASSERT_NOT_NULL(location);
         fprintf(file, "%s\n", location);
