@@ -154,27 +154,21 @@ static int getNumOfLosses(Map scores, int *player) {
     return stats->num_losses;
 }
 
-static ChessResult addPlayerStats(Map stats_by_players, int player_id_winner, int player_id_loser) {
+static void addPlayerStats(Map stats_by_players, int player_id_winner, int player_id_loser) {
     assert(stats_by_players != NULL);
     PlayerStats stats_winner = mapGet(stats_by_players, &player_id_winner);
     ASSERT_NOT_NULL(stats_winner);
     stats_winner->num_wins++;
-    RETURN_IF_NOT_SUCCESS(convertResults(mapPut(stats_by_players, &player_id_winner, stats_winner)));
     PlayerStats stats_loser = mapGet(stats_by_players, &player_id_loser);
     ASSERT_NOT_NULL(stats_loser);
     stats_loser->num_losses++;
-    return convertResults(mapPut(stats_by_players, &player_id_loser, stats_loser));
 }
 
 #define UPDATE_ON_DRAW(player_id) do {                  \
  PlayerStats stats=mapGet(stats_by_players,&gameId->player_id); \
 ASSERT_NOT_NULL(stats);                             \
 stats->num_draws++;} while(0)
-#define UPDATE_ON_WIN(player_id_winner, player_id_loser) \
-do {if (addPlayerStats(stats_by_players, player_id_winner, player_id_loser) != CHESS_SUCCESS) { \
-  mapDestroy(stats_by_players); \
-  return NULL; \
-}} while(0)
+#define UPDATE_ON_WIN(player_id_winner, player_id_loser) addPlayerStats(stats_by_players, player_id_winner, player_id_loser)
 
 // Returns NULL if allocation failed.
 // Returns a map from player ID to that player's stats.
@@ -422,6 +416,7 @@ ChessResult tournamentRemovePlayer(Tournament tournament, int player_id) {
 }
 
 Tournament copyTournament(Tournament tournament) {
+    ASSERT_NOT_NULL(tournament);
     Tournament new = tournamentCreate(tournament->max_games_per_player, tournament->location);
     RETURN_NULL_IF_NULL(new);
     mapDestroy(new->game_by_both_players_id);
