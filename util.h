@@ -12,6 +12,12 @@
 
 #define RETURN_IF_NOT_SUCCESS(result) do { ChessResult temp = (result); \
                                         if (temp != CHESS_SUCCESS) return temp; } while(0)
+// Copied from https://stackoverflow.com/a/5626465
+#ifndef NDEBUG
+#define verify(expression) assert(expression)
+#else
+#define verify(expression) (void)(expression)
+#endif
 
 typedef struct play_stats_t {
     int num_wins;

@@ -70,10 +70,8 @@ ChessResult convertResults(MapResult result) {
     if (result == MAP_ITEM_DOES_NOT_EXIST) {
         return CHESS_TOURNAMENT_NOT_EXIST;
     }
-    if (result == MAP_OUT_OF_MEMORY) {
-        return CHESS_OUT_OF_MEMORY;
-    }
-    assert(0);
+    assert(result == MAP_OUT_OF_MEMORY);
+    return CHESS_OUT_OF_MEMORY;
 }
 
 #define MAP_FOREACH_VALUE(key_type, key_iter, value_type, value_iter, free_key_iter, map) \

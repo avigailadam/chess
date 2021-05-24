@@ -3,9 +3,9 @@
 
 #define MIN_LOCATION_LEN 1
 
-#define PRINT_INT_TO_FILE(func, arg_to_func, arg, file) arg = func(arg_to_func);\
-        assert(arg >= 0);\
-        fprintf(file, "%d\n", arg)
+#define PRINT_INT_TO_FILE(func, arg_to_func, arg, file) (arg) = func(arg_to_func);\
+        assert((arg) >= 0);\
+        fprintf(file, "%d\n", (arg))
 
 #define FOREACH_TOURNAMENT MAP_FOREACH_VALUE(int*, tournament_id, Tournament,\
                                             tournament, freeInt, chess->tournaments_by_id)
@@ -57,14 +57,11 @@ ChessResult chessRemoveTournament(ChessSystem chess, int tournament_id) {
     if (tournament_id <= 0) {
         return CHESS_INVALID_ID;
     }
-    switch (mapRemove(chess->tournaments_by_id, &tournament_id)) {
-        case MAP_ITEM_DOES_NOT_EXIST:
-            return CHESS_TOURNAMENT_NOT_EXIST;
-        case MAP_SUCCESS:
-            return CHESS_SUCCESS;
-        default:
-            assert(false);
+    MapResult result = mapRemove(chess->tournaments_by_id, &tournament_id);
+    if (result == MAP_ITEM_DOES_NOT_EXIST) {
+        return CHESS_TOURNAMENT_NOT_EXIST;
     }
+    assert(result == MAP_SUCCESS);
     return CHESS_SUCCESS;
 }
 

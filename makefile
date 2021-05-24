@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := chess
 CC = gcc
-FLAGS = -std=c99 -pedantic-errors -Werror -DNDEBUG
+FLAGS = -std=c99 -Wall -pedantic-errors -Werror -DNDEBUG -no-pie
 chess: chessSystem test_utilities.h
 	$(CC) $(FLAGS) tests/chessSystemTestsExample.c *.o *.a *.h -o chess
 chessSystem: chessSystem.h tournaments util
