@@ -218,8 +218,8 @@ ChessResult chessSaveTournamentStatistics(ChessSystem chess, char *path_file) {
         const char *location = getLocation(tournament);
         ASSERT_NOT_NULL(location);
         fprintf(file, "%s\n", location);
-        PRINT_INT_TO_FILE(getNumberOfPlayers, tournament, tmp, file);
         PRINT_INT_TO_FILE(getNumberOfGames, tournament, tmp, file);
+        PRINT_INT_TO_FILE(getNumberOfPlayers, tournament, tmp, file);
     }
     return tournament_has_ended ? CHESS_SUCCESS : CHESS_NO_TOURNAMENTS_ENDED;
 }
