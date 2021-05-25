@@ -1,14 +1,21 @@
-.DEFAULT_GOAL := chess
-CC = gcc
-FLAGS = -std=c99 -Wall -pedantic-errors -Werror -DNDEBUG -no-pie
-chess: chessSystem test_utilities.h
-	$(CC) $(FLAGS) tests/chessSystemTestsExample.c *.o *.a *.h -o chess
-chessSystem: chessSystem.h tournaments util
-	$(CC) $(FLAGS) -c chessSystem.c
-tournaments: tournaments.h util
-	$(CC) $(FLAGS) -c tournaments.c
-util: util.h
-	$(CC) $(FLAGS) -c util.c
+CC=gcc
+OBJS=chessSystem.o util.o tournaments.o tests/chessSystemTestsExample.o
+EXEC=chess
+OBJ=chess.o
+DEBUG=-g -DNDEBUG# now empty, assign -g for debug
+CFLAGS=-std=c99 -Wall -pedantic-errors -Werror $(DEBUG)
+
+$(EXEC) : $(OBJ)
+	$(CC) $(CFLAG) $(OBJ) -o $@ -L. -lmap
+$(OBJ): $(OBJS)
+	ld -r -o $(OBJ) $(OBJS)
+
+chessSystemTestsExample.o: tests/chessSystemTestsExample.c \
+ chessSystem.h test_utilities.h
+chessSystem.o: chessSystem.c chessSystem.h map.h tournaments.h
+tournaments.o: tournaments.c tournaments.h map.h
+util.o: util.h util.c chessSystem.h map.h
+chessSystemTestsExample.o: chessSystemTestsExample.c chessSystem.h test_utilities.h
 
 clean:
-	rm *.o
+	rm -f $(OBJS) $(OBJ) $(EXEC)
