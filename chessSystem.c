@@ -220,6 +220,7 @@ ChessResult chessSaveTournamentStatistics(ChessSystem chess, char *path_file) {
         fprintf(file, "%s\n", location);
         PRINT_INT_TO_FILE(getNumberOfGames, tournament, tmp, file);
         PRINT_INT_TO_FILE(getNumberOfPlayers, tournament, tmp, file);
+        fclose(file);
     }
     return tournament_has_ended ? CHESS_SUCCESS : CHESS_NO_TOURNAMENTS_ENDED;
 }
