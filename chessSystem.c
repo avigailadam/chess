@@ -92,6 +92,7 @@ ChessResult chessRemovePlayer(ChessSystem chess, int player_id) {
         bool result = tournamentRemovePlayer(tournament, player_id) == CHESS_SUCCESS;
         was_removed = was_removed || result;
     }
+
     return was_removed ? CHESS_SUCCESS : CHESS_PLAYER_NOT_EXIST;
 }
 
@@ -179,6 +180,40 @@ double chessCalculateAveragePlayTime(ChessSystem chess, int player_id, ChessResu
     return total_play_time / count;
 }
 
+#define SWAP(a, b, temp) \
+do{\
+*(temp)= *(a);\
+*(a)=*(b);\
+*(b)=*(temp);\
+}while(0)
+
+void sortArrays(int player_ids[], double player_ranks[], int size) {
+    for (int len = size; len > 0; len--) {
+        bool swapped = false;
+        for (int i = 0; i < len - 1; ++i) {
+            if (player_ranks[i] < player_ranks[i + 1]) {
+                int int_temp;
+                double double_temp;
+                SWAP(player_ranks + i, player_ranks + i + 1, &double_temp);
+                SWAP(player_ids + i, player_ids + i + 1, &int_temp);
+                swapped = true;
+                continue;
+            }
+            if (player_ranks[i] == player_ranks[i + 1]) {
+                if (player_ids[i] < player_ids[i + 1]) {
+                    continue;
+                }
+                int int_temp;
+                SWAP(player_ids + i, player_ids + i + 1, &int_temp);
+                swapped = true;
+            }
+        }
+        if (swapped == false) {
+            break;
+        }
+    }
+}
+
 ChessResult chessSavePlayersLevels(ChessSystem chess, FILE *file) {
     Map players_stats = mapCreate((copyMapDataElements) &copyStatsFunc, (copyMapKeyElements) &copyInt,
                                   (freeMapDataElements) &freeStatsFunc, (freeMapKeyElements) &freeInt,
@@ -186,19 +221,40 @@ ChessResult chessSavePlayersLevels(ChessSystem chess, FILE *file) {
     if (players_stats == NULL) {
         return CHESS_OUT_OF_MEMORY;
     }
+    int size = 0;
     FOREACH_TOURNAMENT {
         RETURN_IF_NOT_SUCCESS(tournamentUpdatePlayerStats(tournament, players_stats));
+        size += getNumberOfPlayers(tournament);
     }
+    double *players_rank = (double *) malloc(sizeof(*players_rank) * size);
+    if (players_rank == NULL) {
+        return CHESS_OUT_OF_MEMORY;
+    }
+    int *ids = (int *) malloc(sizeof(*ids) * size);
+    if (ids == NULL) {
+        return CHESS_OUT_OF_MEMORY;
+    }
+    int index = 0;
     FOREACH_PLAYER_STATS(players_stats) {
         double level =
                 (double) (6 * player_stats->num_wins - 10 * player_stats->num_losses + 2 * player_stats->num_draws) /
                 (player_stats->num_draws + player_stats->num_losses + player_stats->num_wins);
-        if (fprintf(file, "%d %.2f\n", *player_id, level) < 0) {
+        ids[index] = *player_id;
+        players_rank[index] = level;
+        index++;
+    }
+    sortArrays(ids, players_rank, index);
+    for (int i = 0; i < index; ++i) {
+        if (fprintf(file, "%d %.2f\n", ids[i], players_rank[i]) < 0) {
             mapDestroy(players_stats);
+            free(ids);
+            free(players_rank);
             return CHESS_SAVE_FAILURE;
         }
     }
     mapDestroy(players_stats);
+    free(ids);
+    free(players_rank);
     return CHESS_SUCCESS;
 }
 

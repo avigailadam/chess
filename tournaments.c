@@ -271,8 +271,9 @@ static ChessResult calculateTournamentWinner(Tournament tournament, int *result)
     int least_losses = *least_losses_temp;
     freeInt(least_losses_temp);
     MAP_FOREACH(int*, player, scores) {
-        if (getNumOfLosses(players_to_stats, &least_losses) >= getNumOfLosses(players_to_stats, player)) {
+        if (getNumOfLosses(players_to_stats, &least_losses) > getNumOfLosses(players_to_stats, player)) {
             least_losses = *player;
+
         }
         freeInt(player);
     }
@@ -359,9 +360,9 @@ ChessResult gameCreate(
     struct game_t data;
     data.winner = winner;
     data.duration = play_time;
-    int newPlayers;
-    RETURN_IF_NOT_SUCCESS(getNewPlayers(tournament, first_player, second_player, &newPlayers));
-    tournament->participants += newPlayers;
+    int new_players;
+    RETURN_IF_NOT_SUCCESS(getNewPlayers(tournament, first_player, second_player, &new_players));
+    tournament->participants += new_players;
     return convertResults(mapPut(tournament->game_by_both_players_id, &key, &data));
 }
 
@@ -380,8 +381,11 @@ static ChessResult removePlayer(Tournament tournament, GameKey key, int player_i
     int player_1_id = should_remove_first_player ? (-1) * (key->player_1_id) : key->player_1_id;
     int player_2_id = should_remove_first_player ? key->player_2_id : (-1) * (key->player_2_id);
     int time = data->duration;
-    RETURN_IF_NOT_SUCCESS(convertResults(mapRemove(tournament->game_by_both_players_id, key)));
+    tournament->max_games_per_player++;
     RETURN_IF_NOT_SUCCESS(gameCreate(tournament, player_1_id, player_2_id, winner, time));
+    RETURN_IF_NOT_SUCCESS(convertResults(mapRemove(tournament->game_by_both_players_id, key)));
+    tournament->max_games_per_player--;
+
     return CHESS_SUCCESS;
 }
 
@@ -406,12 +410,16 @@ ChessResult tournamentRemovePlayer(Tournament tournament, int player_id) {
     }
     for (int i = 0; i < index; ++i) {
         ChessResult result = removePlayer(tournament, keys[i], player_id);
+
         verify(result == CHESS_SUCCESS);
     }
     for (int i = 0; i < index; ++i) {
         free_game_key(keys[i]);
     }
     free(keys);
+//    if (index > 0) {
+//        tournament->participants--;
+//    }
     return index > 0 ? CHESS_SUCCESS : CHESS_PLAYER_NOT_EXIST;
 }
 
