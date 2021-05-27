@@ -9,7 +9,7 @@
         int best_player = *temp;    \
         freeInt(temp);                            \
         MAP_FOREACH(int*, player, scores) {       \
-            if (scorer(scores, player) >= scorer(scores, &best_player)) {\
+            if (scorer(scores, player) > scorer(scores, &best_player)) {\
                 best_player = *player;\
             }                       \
             freeInt(player);                            \
@@ -272,18 +272,8 @@ static ChessResult calculateTournamentWinner(Tournament tournament, int *result)
     freeInt(least_losses_temp);
     MAP_FOREACH(int*, player, scores) {
         if (getNumOfLosses(players_to_stats, &least_losses) > getNumOfLosses(players_to_stats, player)) {
+            mapRemove(scores, &least_losses);
             least_losses = *player;
-
-        }
-        freeInt(player);
-    }
-    MAP_FOREACH(int*, player, players_to_stats) {
-        if (mapContains(scores, player) == false) {
-            freeInt(player);
-            continue;
-        }
-        if (getNumOfLosses(players_to_stats, player) > getNumOfLosses(players_to_stats, &least_losses)) {
-            mapRemove(scores, player);
         }
         freeInt(player);
     }
@@ -291,9 +281,18 @@ static ChessResult calculateTournamentWinner(Tournament tournament, int *result)
         return declareWinner(scores, players_to_stats, result);
     }
     assert(mapGetSize(scores) > 1);
-    FILTER_FIRST(getNumOfWinsAux);
+    int *most_wins_temp = mapGetFirst(scores);
+    ASSERT_NOT_NULL(most_wins_temp);
+    int most_wins = *most_wins_temp;
+    freeInt(most_wins_temp);
+    MAP_FOREACH(int*, player, scores) {
+        if (getNumOfWinsAux(players_to_stats, &most_wins) < getNumOfWinsAux(players_to_stats, player)) {
+            mapRemove(scores, &most_wins);
+            most_wins = *player;
+        }
+        freeInt(player);
+    }
     return declareWinner(scores, players_to_stats, result);
-
 }
 
 ChessResult countGamesPerPlayer(Tournament tournament, int player_id, int *result) {
